@@ -3,61 +3,77 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Bybit Trader Pro</title>
+    <title>OKX Trader Pro</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { background: #06060d; color: #fff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
-        .container { width: 100%; max-width: 420px; padding: 24px; }
-        .logo { text-align: center; margin-bottom: 40px; }
-        .logo h1 { font-size: 32px; background: linear-gradient(135deg, #667eea, #e83e8c); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px; }
-        .logo p { color: #666; font-size: 14px; }
-        .cards { display: flex; flex-direction: column; gap: 12px; }
-        .card { background: #0f0f1a; border-radius: 20px; padding: 24px; border: 1px solid #1a1a2e; text-decoration: none; color: #fff; transition: all 0.2s; display: flex; align-items: center; gap: 16px; }
-        .card:hover { border-color: #667eea; transform: translateY(-2px); }
-        .icon { width: 48px; height: 48px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
-        .s1 .icon { background: #4CAF5022; }
-        .s2 .icon { background: #2196F322; }
-        .s3 .icon { background: #FFD70022; }
-        .s4 .icon { background: #FF980022; }
-        .s5 .icon { background: #e83e8c22; }
-        .info h3 { font-size: 16px; margin-bottom: 4px; }
-        .info p { font-size: 12px; color: #666; }
-        .status { width: 8px; height: 8px; border-radius: 50%; background: #4CAF50; margin-left: auto; flex-shrink: 0; box-shadow: 0 0 8px #4CAF50; }
+        body { background: #06060d; color: #fff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; }
+        .container { width: 100%; max-width: 400px; }
+        .logo { text-align: center; margin-bottom: 24px; }
+        .logo h1 { font-size: 26px; background: linear-gradient(135deg, #667eea, #e83e8c); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .logo p { color: #666; font-size: 13px; margin-top: 4px; }
+        .box { background: #0f0f1a; border-radius: 20px; padding: 20px; border: 1px solid #1a1a2e; margin-bottom: 16px; }
+        input { width: 100%; padding: 14px; background: #13132a; border: 1px solid #333; border-radius: 14px; color: #fff; font-size: 15px; margin-bottom: 10px; }
+        button { width: 100%; padding: 14px; background: linear-gradient(135deg, #667eea, #764ba2); border: none; border-radius: 14px; color: #fff; font-size: 15px; font-weight: 600; cursor: pointer; }
+        .user-badge { background: #667eea22; color: #667eea; padding: 8px 16px; border-radius: 30px; text-align: center; font-size: 14px; margin-bottom: 20px; }
+        .cards { display: flex; flex-direction: column; gap: 10px; }
+        .card { background: #0f0f1a; border-radius: 16px; padding: 18px; border: 1px solid #1a1a2e; text-decoration: none; color: #fff; display: flex; align-items: center; gap: 14px; }
+        .card:hover { border-color: #667eea; }
+        .card .icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+        .s1 .icon { background: #4CAF5022; } .s2 .icon { background: #2196F322; } .s3 .icon { background: #FFD70022; } .s4 .icon { background: #FF980022; } .s5 .icon { background: #e83e8c22; }
+        .info h3 { font-size: 15px; } .info p { font-size: 11px; color: #666; margin-top: 2px; }
+        .status { width: 8px; height: 8px; border-radius: 50%; background: #4CAF50; margin-left: auto; box-shadow: 0 0 8px #4CAF50; }
+        #loggedOut, #loggedIn { display: none; }
     </style>
 </head>
 <body>
 <div class="container">
-    <div class="logo">
-        <h1>📊 Bybit Trader</h1>
-        <p>5 стратегий · Имитация торговли</p>
+    <div class="logo"><h1>📊 OKX Trader</h1><p>5 стратегий · Имитация</p></div>
+
+    <div id="loggedOut" style="display:block">
+        <div class="box">
+            <input id="uidInput" placeholder="Введите ваш ID">
+            <button onclick="login()">ВОЙТИ</button>
+        </div>
     </div>
-    <div class="cards">
-        <a href="strategy_1.html" class="card s1">
-            <div class="icon">📌</div>
-            <div class="info"><h3>Стратегия 1</h3><p>Все ликвидации > $1 000</p></div>
-            <div class="status"></div>
-        </a>
-        <a href="strategy_2.html" class="card s2">
-            <div class="icon">📊</div>
-            <div class="info"><h3>Стратегия 2</h3><p>Тренд 15мин / 80%</p></div>
-            <div class="status"></div>
-        </a>
-        <a href="strategy_3.html" class="card s3">
-            <div class="icon">💎</div>
-            <div class="info"><h3>Стратегия 3</h3><p>Избранные монеты > $10 000</p></div>
-            <div class="status"></div>
-        </a>
-        <a href="strategy_4.html" class="card s4">
-            <div class="icon">⏱️</div>
-            <div class="info"><h3>Стратегия 4</h3><p>Тренд 60мин > $5 000</p></div>
-            <div class="status"></div>
-        </a>
-        <a href="strategy_5.html" class="card s5">
-            <div class="icon">💥</div>
-            <div class="info"><h3>Стратегия 5</h3><p>Крупные > $50 000 + трейлинг</p></div>
-            <div class="status"></div>
-        </a>
+
+    <div id="loggedIn">
+        <div class="user-badge">👤 <span id="currentUser"></span> · <a href="#" onclick="logout()" style="color:#F44336;text-decoration:none;font-size:12px;">выйти</a></div>
+        <div class="cards">
+            <a href="strategy_1.html" class="card s1"><div class="icon">📌</div><div class="info"><h3>Стратегия 1</h3><p>Все ликвидации > $1 000</p></div><div class="status"></div></a>
+            <a href="strategy_2.html" class="card s2"><div class="icon">📊</div><div class="info"><h3>Стратегия 2</h3><p>Тренд 15мин / 80%</p></div><div class="status"></div></a>
+            <a href="strategy_3.html" class="card s3"><div class="icon">💎</div><div class="info"><h3>Стратегия 3</h3><p>Избранные монеты > $10 000</p></div><div class="status"></div></a>
+            <a href="strategy_4.html" class="card s4"><div class="icon">⏱️</div><div class="info"><h3>Стратегия 4</h3><p>Тренд 60мин > $5 000</p></div><div class="status"></div></a>
+            <a href="strategy_5.html" class="card s5"><div class="icon">💥</div><div class="info"><h3>Стратегия 5</h3><p>Крупные > $50 000 + трейлинг</p></div><div class="status"></div></a>
+        </div>
     </div>
 </div>
+
+<script>
+    let uid = localStorage.getItem('okx_trader_uid') || '';
+    
+    if (uid) {
+        document.getElementById('loggedOut').style.display = 'none';
+        document.getElementById('loggedIn').style.display = 'block';
+        document.getElementById('currentUser').innerText = uid;
+    } else {
+        document.getElementById('loggedOut').style.display = 'block';
+    }
+
+    function login() {
+        uid = document.getElementById('uidInput').value.trim();
+        if (!uid) return;
+        localStorage.setItem('okx_trader_uid', uid);
+        document.getElementById('loggedOut').style.display = 'none';
+        document.getElementById('loggedIn').style.display = 'block';
+        document.getElementById('currentUser').innerText = uid;
+    }
+
+    function logout() {
+        localStorage.removeItem('okx_trader_uid');
+        uid = '';
+        document.getElementById('loggedOut').style.display = 'block';
+        document.getElementById('loggedIn').style.display = 'none';
+    }
+</script>
 </body>
 </html>
