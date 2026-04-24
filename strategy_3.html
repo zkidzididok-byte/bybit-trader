@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>S3 — Избранные монеты</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #0a0a0f; color: #fff; font-family: -apple-system, sans-serif; padding: 16px; padding-bottom: 60px; }
+        .header { background: #13131a; border-radius: 20px; padding: 20px; margin-bottom: 16px; text-align: center; }
+        .title { font-size: 20px; font-weight: bold; color: #667eea; }
+        .subtitle { font-size: 12px; color: #888; margin-top: 4px; }
+        .card { background: #13131a; border-radius: 20px; padding: 20px; margin-bottom: 16px; border: 1px solid #222; }
+        .balance-large { font-size: 42px; font-weight: bold; background: linear-gradient(135deg, #4CAF50, #8BC34A); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .balance-label { font-size: 13px; color: #666; }
+        .pnl-positive { color: #4CAF50; }
+        .pnl-negative { color: #F44336; }
+        .stats-row { display: flex; justify-content: space-between; margin: 16px 0; }
+        .stat-item { text-align: center; }
+        .stat-value { font-size: 22px; font-weight: bold; }
+        .stat-label { font-size: 11px; color: #666; margin-top: 4px; }
+        .pos-card { background: #1a1a24; border-radius: 16px; padding: 14px; margin-bottom: 10px; border-left: 4px solid; }
+        .pos-card.BUY { border-left-color: #4CAF50; }
+        .pos-card.SELL { border-left-color: #F44336; }
+        .trade-item { background: #1a1a24; border-radius: 14px; padding: 12px; margin-bottom: 8px; font-size: 13px; }
+        .scroll { max-height: 400px; overflow-y: auto; }
+        .status-bar { position: fixed; bottom: 0; left: 0; right: 0; background: #13131a; padding: 10px; border-top: 1px solid #222; font-size: 12px; text-align: center; color: #4CAF50; }
+        .nav { display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: wrap; }
+        .nav a { flex: 1; min-width: 50px; padding: 10px 6px; background: #1a1a24; border-radius: 12px; text-align: center; color: #888; text-decoration: none; font-size: 11px; font-weight: 600; }
+        .nav a.active { background: #667eea; color: white; }
+        input, button { width: 100%; padding: 14px; margin-bottom: 10px; background: #1a1a24; border: 1px solid #333; border-radius: 14px; color: white; font-size: 14px; }
+        button { background: linear-gradient(135deg, #667eea, #764ba2); border: none; font-weight: bold; cursor: pointer; }
+        .elite-badge { display: inline-block; background: #FFD70022; color: #FFD700; padding: 2px 8px; border-radius: 20px; font-size: 10px; margin-left: 6px; }
+    </style>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
+</head>
+<body>
+
+<div class="header">
+    <div class="title">💎 СТРАТЕГИЯ 3</div>
+    <div class="subtitle">Избранные монеты | Ликв > $10 000 | Стоп -1%</div>
+</div>
+
+<div class="nav">
+    <a href="strategy_1.html">S1</a>
+    <a href="strategy_2.html">S2</a>
+    <a href="strategy_3.html" class="active">S3</a>
+    <a href="strategy_4.html">S4</a>
+    <a href="strategy_5.html">S5</a>
+</div>
+
+<div id="loginBlock">
+    <div class="card">
+        <input type="text" id="userIdInput" placeholder="Ваш ID (zkidz)">
+        <button onclick="login()">ВОЙТИ</button>
+    </div>
+</div>
+
+<div id="mainBlock" style="display:none;">
+    <div class="card">
+        <div class="balance-label">БАЛАНС</div>
+        <div class="balance-large">$<span id="balance">0</span></div>
+        <div style="display:flex; justify-content:space-between; margin-top:8px; color:#888;">
+            <span>Свободно: $<span id="free">0</span></span>
+            <span>Прибыль: <span id="profit">$0</span></span>
+        </div>
+    </div>
+    <div class="stats-row">
+        <div class="stat-item"><div class="stat-value" id="total">0</div><div class="stat-label">Сделок</div></div>
+        <div class="stat-item"><div class="stat-value" id="winrate">0%</div><div class="stat-label">Win Rate</div></div>
+        <div class="stat-item"><div class="stat-value pnl-positive" id="wins">0</div><div class="stat-label">✅ Wins</div></div>
+        <div class="stat-item"><div class="stat-value pnl-negative" id="losses">0</div><div class="stat-label">❌ Losses</div></div>
+    </div>
+    <div class="card">
+        <div style="color:#888; margin-bottom:12px;">📌 ОТКРЫТЫЕ ПОЗИЦИИ (<span id="posCount">0</span>)</div>
+        <div class="scroll" id="positions"></div>
+    </div>
+    <div class="card">
+        <div style="color:#888; margin-bottom:12px;">📋 ИСТОРИЯ СДЕЛОК</div>
+        <div class="scroll" id="trades"></div>
+    </div>
+</div>
+
+<div class="status-bar" id="status">🟢 S3 • ОНЛАЙН</div>
+
+<script>
+    firebase.initializeApp({databaseURL:"https://bybittradingapp-d53cf-default-rtdb.firebaseio.com"});
+    const db = firebase.database();
+    const STRATEGY = "strategy_3";
+    const ELITE = ['STRKUSDT','LDOUSDT','WLDUSDT','XRPUSDT','ETHUSDT','SUIUSDT','ALGOUSDT','AUSDUSDT','LINKUSDT','AAVEUSDT'];
+    let uid = localStorage.getItem('uid_s3') || '';
+    
+    if(uid) { document.getElementById('loginBlock').style.display='none'; document.getElementById('mainBlock').style.display='block'; loadData(); }
+    
+    function login() {
+        uid = document.getElementById('userIdInput').value.trim();
+        if(!uid) return;
+        localStorage.setItem('uid_s3', uid);
+        document.getElementById('loginBlock').style.display='none';
+        document.getElementById('mainBlock').style.display='block';
+        loadData();
+    }
+    
+    function loadData() {
+        const base = `strategies/${STRATEGY}/users/${uid}`;
+        db.ref(base+'/current').on('value', s => {
+            const d = s.val() || {};
+            document.getElementById('balance').innerText = (d.balance||0).toFixed(2);
+            document.getElementById('free').innerText = (d.free||0).toFixed(2);
+            document.getElementById('profit').innerText = (d.profit||0)>=0?'+$'+(d.profit||0).toFixed(2):'-$'+Math.abs(d.profit||0).toFixed(2);
+        });
+        db.ref(base+'/stats').on('value', s => {
+            const d = s.val() || {};
+            document.getElementById('total').innerText = d.total||0;
+            document.getElementById('winrate').innerText = (d.win_rate||0).toFixed(1)+'%';
+            document.getElementById('wins').innerText = d.wins||0;
+            document.getElementById('losses').innerText = d.losses||0;
+        });
+        db.ref(base+'/open_positions').on('value', s => {
+            const d = s.val();
+            const arr = d ? Object.values(d) : [];
+            document.getElementById('posCount').innerText = arr.length;
+            document.getElementById('positions').innerHTML = arr.length ? arr.map(p => `
+                <div class="pos-card ${p.side}">
+                    <div style="display:flex; justify-content:space-between; font-weight:bold;">
+                        <span>${p.symbol} ${ELITE.includes(p.symbol)?'<span class="elite-badge">ELITE</span>':''}</span>
+                        <span style="color:${p.side==='BUY'?'#4CAF50':'#F44336'}">${p.side}</span>
+                    </div>
+                    <div style="font-size:12px; color:#888; margin-top:6px;">
+                        Вход: $${(p.entry||0).toFixed(6)} | Тек: $${(p.current_price||0).toFixed(6)} | Стоп: $${(p.stop||0).toFixed(6)}
+                    </div>
+                    <div style="font-size:12px; color:#888;">Объём: $${(p.position_usdt||0).toFixed(2)} | Маржа: $${(p.margin_usdt||0).toFixed(2)}</div>
+                </div>
+            `).join('') : '<div style="color:#666;text-align:center;padding:20px;">Нет позиций</div>';
+        });
+        db.ref(base+'/trades').limitToLast(50).on('value', s => {
+            const d = s.val();
+            const arr = d ? Object.values(d).reverse() : [];
+            document.getElementById('trades').innerHTML = arr.length ? arr.map(t => `
+                <div class="trade-item">
+                    <div style="display:flex; justify-content:space-between;">
+                        <span>${t.symbol} ${t.side} ${ELITE.includes(t.symbol)?'<span class="elite-badge">ELITE</span>':''}</span>
+                        <span class="${t.profit>=0?'pnl-positive':'pnl-negative'}">${t.profit>=0?'+':''}$${(t.profit||0).toFixed(4)}</span>
+                    </div>
+                    <div style="font-size:11px; color:#666;">Вход: $${(t.entry||0).toFixed(4)} → Выход: $${(t.exit||0).toFixed(4)} | ${t.reason}</div>
+                </div>
+            `).join('') : '<div style="color:#666;text-align:center;padding:20px;">Нет сделок</div>';
+        });
+    }
+    
+    setInterval(() => { document.getElementById('status').innerText = '🟢 S3 • '+new Date().toLocaleTimeString(); }, 1000);
+</script>
+</body>
+</html>
