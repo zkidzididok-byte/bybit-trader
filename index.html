@@ -22,19 +22,14 @@
         .s1 .icon { background: #4CAF5022; } .s2 .icon { background: #2196F322; } .s3 .icon { background: #FFD70022; } .s4 .icon { background: #FF980022; } .s5 .icon { background: #e83e8c22; }
         .info h3 { font-size: 15px; } .info p { font-size: 11px; color: #666; margin-top: 2px; }
         .status { width: 8px; height: 8px; border-radius: 50%; background: #4CAF50; margin-left: auto; box-shadow: 0 0 8px #4CAF50; }
-        #loggedOut, #loggedIn { display: none; }
+        #loggedIn { display: none; }
     </style>
 </head>
 <body>
 <div class="container">
     <div class="logo"><h1>📊 OKX Trader</h1><p>5 стратегий · Имитация</p></div>
 
-    <div id="loggedOut" style="display:block">
-        <div class="box">
-            <input id="uidInput" placeholder="Введите ваш ID">
-            <button onclick="login()">ВОЙТИ</button>
-        </div>
-    </div>
+    <div id="loggedOut"><div class="box"><input id="uidInput" placeholder="Введите ваш ID"><button onclick="login()">ВОЙТИ</button></div></div>
 
     <div id="loggedIn">
         <div class="user-badge">👤 <span id="currentUser"></span> · <a href="#" onclick="logout()" style="color:#F44336;text-decoration:none;font-size:12px;">выйти</a></div>
@@ -50,19 +45,16 @@
 
 <script>
     let uid = localStorage.getItem('okx_trader_uid') || '';
-    
-    if (uid) {
-        document.getElementById('loggedOut').style.display = 'none';
-        document.getElementById('loggedIn').style.display = 'block';
-        document.getElementById('currentUser').innerText = uid;
-    } else {
-        document.getElementById('loggedOut').style.display = 'block';
-    }
+    if (uid) { showLoggedIn(uid); }
 
     function login() {
         uid = document.getElementById('uidInput').value.trim();
         if (!uid) return;
         localStorage.setItem('okx_trader_uid', uid);
+        showLoggedIn(uid);
+    }
+
+    function showLoggedIn(uid) {
         document.getElementById('loggedOut').style.display = 'none';
         document.getElementById('loggedIn').style.display = 'block';
         document.getElementById('currentUser').innerText = uid;
