@@ -1,20 +1,63 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Bybit Trader Pro</title>
     <style>
-        body { background: #0a0a0f; color: #fff; font-family: -apple-system, sans-serif; text-align: center; padding: 40px; }
-        a { display: block; padding: 16px; margin: 10px auto; background: #13131a; border-radius: 14px; color: #667eea; text-decoration: none; font-size: 18px; max-width: 300px; border: 1px solid #222; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #06060d; color: #fff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+        .container { width: 100%; max-width: 420px; padding: 24px; }
+        .logo { text-align: center; margin-bottom: 40px; }
+        .logo h1 { font-size: 32px; background: linear-gradient(135deg, #667eea, #e83e8c); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px; }
+        .logo p { color: #666; font-size: 14px; }
+        .cards { display: flex; flex-direction: column; gap: 12px; }
+        .card { background: #0f0f1a; border-radius: 20px; padding: 24px; border: 1px solid #1a1a2e; text-decoration: none; color: #fff; transition: all 0.2s; display: flex; align-items: center; gap: 16px; }
+        .card:hover { border-color: #667eea; transform: translateY(-2px); }
+        .icon { width: 48px; height: 48px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
+        .s1 .icon { background: #4CAF5022; }
+        .s2 .icon { background: #2196F322; }
+        .s3 .icon { background: #FFD70022; }
+        .s4 .icon { background: #FF980022; }
+        .s5 .icon { background: #e83e8c22; }
+        .info h3 { font-size: 16px; margin-bottom: 4px; }
+        .info p { font-size: 12px; color: #666; }
+        .status { width: 8px; height: 8px; border-radius: 50%; background: #4CAF50; margin-left: auto; flex-shrink: 0; box-shadow: 0 0 8px #4CAF50; }
     </style>
 </head>
 <body>
-    <h2>📊 BYBIT TRADER PRO</h2>
-    <p style="color:#888; margin-bottom:30px;">5 стратегий</p>
-    <a href="strategy_1.html">📌 S1 — Все ликвидации</a>
-    <a href="strategy_2.html">📊 S2 — Тренд 15мин</a>
-    <a href="strategy_3.html">💎 S3 — Избранные монеты</a>
-    <a href="strategy_4.html">⏱️ S4 — Тренд 60мин</a>
-    <a href="strategy_5.html">💥 S5 — Крупные ликвидации</a>
+<div class="container">
+    <div class="logo">
+        <h1>📊 Bybit Trader</h1>
+        <p>5 стратегий · Имитация торговли</p>
+    </div>
+    <div class="cards">
+        <a href="strategy_1.html" class="card s1">
+            <div class="icon">📌</div>
+            <div class="info"><h3>Стратегия 1</h3><p>Все ликвидации > $1 000</p></div>
+            <div class="status"></div>
+        </a>
+        <a href="strategy_2.html" class="card s2">
+            <div class="icon">📊</div>
+            <div class="info"><h3>Стратегия 2</h3><p>Тренд 15мин / 80%</p></div>
+            <div class="status"></div>
+        </a>
+        <a href="strategy_3.html" class="card s3">
+            <div class="icon">💎</div>
+            <div class="info"><h3>Стратегия 3</h3><p>Избранные монеты > $10 000</p></div>
+            <div class="status"></div>
+        </a>
+        <a href="strategy_4.html" class="card s4">
+            <div class="icon">⏱️</div>
+            <div class="info"><h3>Стратегия 4</h3><p>Тренд 60мин > $5 000</p></div>
+            <div class="status"></div>
+        </a>
+        <a href="strategy_5.html" class="card s5">
+            <div class="icon">💥</div>
+            <div class="info"><h3>Стратегия 5</h3><p>Крупные > $50 000 + трейлинг</p></div>
+            <div class="status"></div>
+        </a>
+    </div>
+</div>
 </body>
 </html>
