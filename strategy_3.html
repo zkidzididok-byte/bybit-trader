@@ -3,82 +3,87 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Стратегия 3 — Избранные монеты</title>
+    <title>S3 — Избранные монеты</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { background: #06060d; color: #fff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; padding: 16px; padding-bottom: 80px; }
-        .header { background: #0f0f1a; border-radius: 20px; padding: 20px; margin-bottom: 16px; text-align: center; border: 1px solid #1a1a2e; }
-        .title { font-size: 18px; font-weight: 700; }
-        .sub { font-size: 11px; color: #888; margin-top: 4px; }
-        .nav { display: flex; gap: 4px; margin-bottom: 16px; background: #0f0f1a; padding: 4px; border-radius: 40px; }
-        .nav a { flex: 1; padding: 10px 0; text-align: center; color: #666; text-decoration: none; font-size: 11px; font-weight: 600; border-radius: 40px; }
+        body { background: #06060d; color: #fff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; padding: 12px; padding-bottom: 60px; }
+        .top { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+        .top a { color: #667eea; text-decoration: none; font-size: 14px; }
+        .nav { display: flex; gap: 3px; margin-bottom: 12px; background: #0f0f1a; padding: 3px; border-radius: 30px; }
+        .nav a { flex: 1; padding: 8px 0; text-align: center; color: #666; text-decoration: none; font-size: 10px; font-weight: 600; border-radius: 30px; }
         .nav a.active { background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; }
-        .card { background: #0f0f1a; border-radius: 20px; padding: 18px; margin-bottom: 12px; border: 1px solid #1a1a2e; }
-        .balance { font-size: 38px; font-weight: 800; background: linear-gradient(135deg, #4CAF50, #8BC34A); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .label { font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
-        .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 16px 0; text-align: center; }
-        .stat-val { font-size: 20px; font-weight: 700; }
-        .stat-lbl { font-size: 10px; color: #666; margin-top: 2px; }
-        .green { color: #4CAF50; }
-        .red { color: #F44336; }
-        .pos-card { background: #13132a; border-radius: 14px; padding: 14px; margin-bottom: 10px; border-left: 3px solid; }
-        .pos-card.BUY { border-color: #4CAF50; }
-        .pos-card.SELL { border-color: #F44336; }
-        .pos-row { display: flex; justify-content: space-between; align-items: center; }
-        .sym { font-size: 16px; font-weight: 700; }
-        .side-badge { font-size: 11px; padding: 4px 10px; border-radius: 20px; font-weight: 600; }
-        .side-badge.BUY { background: #4CAF5033; color: #4CAF50; }
-        .side-badge.SELL { background: #F4433633; color: #F44336; }
-        .trade-item { background: #13132a; border-radius: 12px; padding: 12px; margin-bottom: 8px; }
-        .login-box { background: #0f0f1a; border-radius: 20px; padding: 24px; border: 1px solid #1a1a2e; }
-        input { width: 100%; padding: 14px; background: #13132a; border: 1px solid #2a2a3e; border-radius: 14px; color: #fff; font-size: 15px; margin-bottom: 10px; }
-        button { width: 100%; padding: 14px; background: linear-gradient(135deg, #667eea, #764ba2); border: none; border-radius: 14px; color: #fff; font-size: 15px; font-weight: 600; cursor: pointer; }
-        .footer { position: fixed; bottom: 0; left: 0; right: 0; background: #0f0f1a; padding: 10px; border-top: 1px solid #1a1a2e; text-align: center; font-size: 11px; color: #4CAF50; }
-        .scroll { max-height: 350px; overflow-y: auto; }
-        .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 13px; color: #aaa; margin-top: 8px; }
-        .elite { display: inline-block; padding: 2px 8px; background: #FFD70022; color: #FFD700; border-radius: 10px; font-size: 10px; margin-left: 6px; }
+        .card { background: #0f0f1a; border-radius: 14px; padding: 14px; margin-bottom: 8px; border: 1px solid #1a1a2e; }
+        .bal { font-size: 30px; font-weight: 800; background: linear-gradient(135deg, #4CAF50, #8BC34A); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .lbl { font-size: 10px; color: #666; text-transform: uppercase; letter-spacing: 1px; }
+        .row { display: flex; justify-content: space-between; align-items: center; }
+        .green { color: #4CAF50; } .red { color: #F44336; }
+        .grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; text-align: center; margin: 10px 0; }
+        .gv { font-size: 16px; font-weight: 700; } .gl { font-size: 9px; color: #666; }
+        .pos { background: #13132a; border-radius: 10px; padding: 10px; margin-bottom: 6px; border-left: 3px solid; }
+        .pos.BUY { border-color: #4CAF50; } .pos.SELL { border-color: #F44336; }
+        .sb { font-size: 10px; padding: 2px 7px; border-radius: 15px; font-weight: 600; }
+        .sb.BUY { background: #4CAF5033; color: #4CAF50; } .sb.SELL { background: #F4433633; color: #F44336; }
+        .tr { background: #13132a; border-radius: 10px; padding: 10px; margin-bottom: 5px; font-size: 12px; }
+        .ft { position: fixed; bottom: 0; left: 0; right: 0; background: #0f0f1a; padding: 6px; border-top: 1px solid #1a1a2e; text-align: center; font-size: 10px; color: #4CAF50; }
+        .elite { display: inline-block; padding: 1px 6px; background: #FFD70022; color: #FFD700; border-radius: 8px; font-size: 9px; margin-left: 4px; }
     </style>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
 </head>
 <body>
 
-<div class="header"><div class="title">💎 СТРАТЕГИЯ 3</div><div class="sub">Избранные монеты · Ликв > $10 000 · Стоп -1%</div></div>
+<div class="top"><a href="index.html">← Назад</a><span style="font-size:12px;color:#888;">👤 <span id="uname">—</span></span></div>
 
 <div class="nav">
     <a href="strategy_1.html">S1</a><a href="strategy_2.html">S2</a><a href="strategy_3.html" class="active">S3</a><a href="strategy_4.html">S4</a><a href="strategy_5.html">S5</a>
 </div>
 
-<div id="login"><div class="login-box"><input id="uid" placeholder="Ваш ID"><button onclick="login()">ВОЙТИ</button></div></div>
-
-<div id="main" style="display:none">
+<div id="main">
     <div class="card">
-        <div class="label">БАЛАНС</div>
-        <div class="balance">$<span id="bal">0</span></div>
-        <div class="row-2"><span>Свободно: $<span id="free">0</span></span><span>Прибыль: <span id="prof">$0</span></span></div>
+        <div class="lbl">БАЛАНС</div>
+        <div class="bal">$<span id="bal">0</span></div>
+        <div class="row" style="margin-top:6px;font-size:12px;color:#aaa;"><span>Свободно: $<span id="free">0</span></span><span>Прибыль: <span id="prof">$0</span></span></div>
     </div>
-    <div class="stats"><div><div class="stat-val" id="tot">0</div><div class="stat-lbl">СДЕЛОК</div></div><div><div class="stat-val" id="wr">0%</div><div class="stat-lbl">WIN RATE</div></div><div><div class="stat-val green" id="wins">0</div><div class="stat-lbl">✅ WINS</div></div><div><div class="stat-val red" id="loss">0</div><div class="stat-lbl">❌ LOSSES</div></div></div>
-    <div class="card"><div class="label" style="margin-bottom:10px;">📌 ПОЗИЦИИ (<span id="pc">0</span>)</div><div class="scroll" id="pos"></div></div>
-    <div class="card"><div class="label" style="margin-bottom:10px;">📋 ИСТОРИЯ</div><div class="scroll" id="tr"></div></div>
+    <div class="grid4"><div><div class="gv" id="tot">0</div><div class="gl">СДЕЛОК</div></div><div><div class="gv" id="wr">0%</div><div class="gl">WIN RATE</div></div><div><div class="gv green" id="w">0</div><div class="gl">✅ WINS</div></div><div><div class="gv red" id="l">0</div><div class="gl">❌ LOSS</div></div></div>
+    <div class="card"><div class="lbl">📌 ПОЗИЦИИ (<span id="pc">0</span>)</div><div id="posList"></div></div>
+    <div class="card"><div class="lbl">📋 ИСТОРИЯ</div><div id="trades"></div></div>
 </div>
 
-<div class="footer" id="st">🟢 S3 · ОНЛАЙН</div>
+<div class="ft">🟢 S3 · <span id="clock">—</span></div>
 
 <script>
-firebase.initializeApp({databaseURL:"https://bybittradingapp-d53cf-default-rtdb.firebaseio.com"});
-const db=firebase.database(),S="strategy_3";
-const ELITE=['STRKUSDT','LDOUSDT','WLDUSDT','XRPUSDT','ETHUSDT','SUIUSDT','ALGOUSDT','AUSDUSDT','LINKUSDT','AAVEUSDT'];
-let u=localStorage.getItem('u3')||'';
-if(u){document.getElementById('login').style.display='none';document.getElementById('main').style.display='block';ld();}
-function login(){u=document.getElementById('uid').value.trim();if(!u)return;localStorage.setItem('u3',u);document.getElementById('login').style.display='none';document.getElementById('main').style.display='block';ld();}
-function ld(){
-const b=`strategies/${S}/users/${u}`;
-db.ref(b+'/current').on('value',s=>{const d=s.val()||{};document.getElementById('bal').innerText=(d.balance||0).toFixed(2);document.getElementById('free').innerText=(d.free||0).toFixed(2);document.getElementById('prof').innerText=(d.profit||0>=0?'+':'')+'$'+(d.profit||0).toFixed(2);});
-db.ref(b+'/stats').on('value',s=>{const d=s.val()||{};document.getElementById('tot').innerText=d.total||0;document.getElementById('wr').innerText=(d.win_rate||0).toFixed(1)+'%';document.getElementById('wins').innerText=d.wins||0;document.getElementById('loss').innerText=d.losses||0;});
-db.ref(b+'/open_positions').on('value',s=>{const d=s.val(),a=d?Object.values(d):[];document.getElementById('pc').innerText=a.length;document.getElementById('pos').innerHTML=a.length?a.map(p=>`<div class="pos-card ${p.side}"><div class="pos-row"><span class="sym">${p.symbol} ${ELITE.includes(p.symbol)?'<span class="elite">ELITE</span>':''}</span><span class="side-badge ${p.side}">${p.side}</span></div><div class="row-2"><span>Вход: $${(p.entry||0).toFixed(6)}</span><span>Стоп: $${(p.stop||0).toFixed(6)}</span><span>Тек: $${(p.current_price||0).toFixed(6)}</span><span>Объём: $${(p.position_usdt||0).toFixed(2)}</span></div></div>`).join(''):'<div style="color:#666;text-align:center;padding:20px;">Нет позиций</div>';});
-db.ref(b+'/trades').limitToLast(30).on('value',s=>{const d=s.val(),a=d?Object.values(d).reverse():[];document.getElementById('tr').innerHTML=a.length?a.map(t=>`<div class="trade-item"><div class="pos-row"><span>${t.symbol} ${t.side} ${ELITE.includes(t.symbol)?'<span class="elite">ELITE</span>':''}</span><span class="${t.profit>=0?'green':'red'}" style="font-weight:700">${t.profit>=0?'+':''}$${(t.profit||0).toFixed(4)}</span></div><div style="font-size:11px;color:#666;margin-top:4px;">Вход: $${(t.entry||0).toFixed(4)} → $${(t.exit||0).toFixed(4)} · ${t.reason}</div></div>`).join(''):'<div style="color:#666;text-align:center;padding:20px;">Нет сделок</div>';});
-}
-setInterval(()=>{document.getElementById('st').innerText='🟢 S3 · '+new Date().toLocaleTimeString();},1000);
+    const ELITE = ['STRKUSDT','LDOUSDT','WLDUSDT','XRPUSDT','ETHUSDT','SUIUSDT','ALGOUSDT','AUSDUSDT','LINKUSDT','AAVEUSDT'];
+    const uid = localStorage.getItem('okx_trader_uid') || '';
+    if (!uid) { document.getElementById('main').innerHTML = '<div style="text-align:center;padding:40px;color:#666;"><a href="index.html" style="color:#667eea;">← Войдите на главной</a></div>'; }
+    else {
+        document.getElementById('uname').innerText = uid;
+        firebase.initializeApp({databaseURL:"https://bybittradingapp-d53cf-default-rtdb.firebaseio.com"});
+        const db = firebase.database(), S = "strategy_3", B = `strategies/${S}/users/${uid}`;
+        
+        db.ref(B+'/current').on('value', s => {
+            const d = s.val() || {};
+            document.getElementById('bal').innerText = (d.balance||0).toFixed(2);
+            document.getElementById('free').innerText = (d.free||0).toFixed(2);
+            document.getElementById('prof').innerText = ((d.profit||0)>=0?'+':'')+'$'+(d.profit||0).toFixed(2);
+        });
+        db.ref(B+'/stats').on('value', s => {
+            const d = s.val() || {};
+            document.getElementById('tot').innerText = d.total||0;
+            document.getElementById('wr').innerText = (d.win_rate||0).toFixed(1)+'%';
+            document.getElementById('w').innerText = d.wins||0;
+            document.getElementById('l').innerText = d.losses||0;
+        });
+        db.ref(B+'/open_positions').on('value', s => {
+            const a = s.val() ? Object.values(s.val()) : [];
+            document.getElementById('pc').innerText = a.length;
+            document.getElementById('posList').innerHTML = a.length ? a.map(p => `<div class="pos ${p.side}"><div class="row"><span style="font-weight:700;">${p.symbol} ${ELITE.includes(p.symbol)?'<span class="elite">ELITE</span>':''}</span><span class="sb ${p.side}">${p.side}</span></div><div style="font-size:11px;color:#aaa;margin-top:4px;">Вход: $${(p.entry||0).toFixed(6)} | Тек: $${(p.current_price||0).toFixed(6)} | Стоп: $${(p.stop||0).toFixed(6)} | Объём: $${(p.position_usdt||0).toFixed(2)}</div></div>`).join('') : '<div style="color:#666;text-align:center;padding:12px;">Нет позиций</div>';
+        });
+        db.ref(B+'/trades').limitToLast(30).on('value', s => {
+            const a = s.val() ? Object.values(s.val()).reverse() : [];
+            document.getElementById('trades').innerHTML = a.length ? a.map(t => `<div class="tr"><div class="row"><span>${t.symbol} ${t.side} ${ELITE.includes(t.symbol)?'<span class="elite">ELITE</span>':''}</span><span class="${t.profit>=0?'green':'red'}" style="font-weight:700;">${t.profit>=0?'+':''}$${(t.profit||0).toFixed(4)}</span></div><div style="font-size:10px;color:#666;">${(t.entry||0).toFixed(4)} → ${(t.exit||0).toFixed(4)} · ${t.reason}</div></div>`).join('') : '<div style="color:#666;text-align:center;padding:12px;">Нет сделок</div>';
+        });
+    }
+    setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleTimeString(); }, 1000);
 </script>
 </body>
 </html>
