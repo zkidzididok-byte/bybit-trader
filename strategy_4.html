@@ -8,100 +8,41 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #0a0a0f; color: #fff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 20px; }
         .back { color: #667eea; text-decoration: none; font-size: 14px; margin-bottom: 20px; display: inline-block; }
-        .header { background: #13131a; border-radius: 16px; padding: 24px; margin-bottom: 20px; border: 1px solid #222; }
-        .header h1 { font-size: 24px; margin-bottom: 8px; }
-        .header p { color: #888; font-size: 14px; }
-        
-        .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px; }
-        .stat-card { background: #13131a; border-radius: 14px; padding: 16px; text-align: center; border: 1px solid #222; }
-        .stat-value { font-size: 28px; font-weight: bold; }
-        .stat-label { font-size: 11px; color: #666; margin-top: 4px; }
-        
-        .position-card { background: #13131a; border-radius: 14px; padding: 16px; margin-bottom: 12px; border: 1px solid #222; border-left: 4px solid; }
-        .position-card.BUY { border-left-color: #4CAF50; }
-        .position-card.SELL { border-left-color: #F44336; }
-        .pos-header { display: flex; justify-content: space-between; }
-        .pos-symbol { font-size: 18px; font-weight: bold; }
-        .pos-side { padding: 4px 12px; border-radius: 20px; font-size: 12px; }
-        .pos-side.BUY { background: #4CAF5022; color: #4CAF50; }
-        .pos-side.SELL { background: #F4433622; color: #F44336; }
-        .pos-details { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 12px; color: #888; font-size: 13px; }
-        
-        .trade-item { background: #13131a; border-radius: 12px; padding: 14px; margin-bottom: 8px; border: 1px solid #222; display: flex; justify-content: space-between; }
-        .trade-profit { font-weight: bold; }
-        .trade-profit.positive { color: #4CAF50; }
-        .trade-profit.negative { color: #F44336; }
+        .card { background: #13131a; border-radius: 16px; padding: 20px; margin-bottom: 16px; border: 1px solid #222; }
+        .stat-row { display: flex; gap: 12px; margin-bottom: 16px; }
+        .stat { flex: 1; text-align: center; background: #1a1a24; padding: 14px; border-radius: 12px; }
+        .stat-val { font-size: 22px; font-weight: bold; }
+        .stat-lbl { font-size: 11px; color: #666; }
+        .green { color: #4CAF50; } .red { color: #F44336; } .gold { color: #FFD700; }
+        .pos { background: #1a1a24; padding: 14px; border-radius: 12px; margin: 8px 0; border-left: 3px solid #4CAF50; }
+        .pos.SELL { border-left-color: #F44336; }
     </style>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
 </head>
 <body>
     <a href="index.html" class="back">← Назад</a>
-    
-    <div class="header">
-        <h1>🕐 Стратегия 4: Тренд 60 минут + > $5 000</h1>
-        <p>Вход по тренду за 60 минут. Ликвидация > $5 000. Стоп -1%</p>
+    <div class="card">
+        <h2>🕐 Стратегия 4: Тренд 60мин + >$5K</h2>
+        <p style="color:#888">Вход по тренду за час | Стоп -1%</p>
     </div>
-    
-    <div class="stats">
-        <div class="stat-card"><div class="stat-value" style="color:#4CAF50;" id="balance">1000</div><div class="stat-label">БАЛАНС $</div></div>
-        <div class="stat-card"><div class="stat-value" id="total">0</div><div class="stat-label">СДЕЛОК</div></div>
-        <div class="stat-card"><div class="stat-value" id="winrate" style="color:#FFD700;">0%</div><div class="stat-label">WIN RATE</div></div>
+    <div class="stat-row">
+        <div class="stat"><div class="stat-val green" id="balance">—</div><div class="stat-lbl">Баланс $</div></div>
+        <div class="stat"><div class="stat-val" id="total">—</div><div class="stat-lbl">Сделок</div></div>
+        <div class="stat"><div class="stat-val gold" id="winrate">—</div><div class="stat-lbl">Win Rate</div></div>
     </div>
-    
-    <h3 style="color:#888; margin-bottom:12px;">📌 ОТКРЫТЫЕ ПОЗИЦИИ</h3>
-    <div id="positionsList"><div style="color:#666; text-align:center; padding:20px;">Нет позиций</div></div>
-    
-    <h3 style="color:#888; margin:20px 0 12px;">📋 ИСТОРИЯ</h3>
-    <div id="tradesList"><div style="color:#666; text-align:center; padding:20px;">Нет сделок</div></div>
-    
+    <div class="card"><h3>📌 Позиции</h3><div id="positions">Нет позиций</div></div>
+    <div class="card"><h3>📋 История</h3><div id="trades">Нет сделок</div></div>
+
     <script>
-        const firebaseConfig = { databaseURL: "https://bybittradingapp-d53cf-default-rtdb.firebaseio.com" };
-        firebase.initializeApp(firebaseConfig);
+        firebase.initializeApp({ databaseURL: "https://bybittradingapp-d53cf-default-rtdb.firebaseio.com" });
         const db = firebase.database();
-        const uid = localStorage.getItem('current_user_id') || 'zkidz';
+        const uid = 'zkidz';
         const path = 'strategies/strategy_4/users/' + uid;
-        
-        db.ref(path + '/current').on('value', snap => {
-            const d = snap.val();
-            if (d) document.getElementById('balance').innerText = (d.balance || 1000).toFixed(2);
-        });
-        db.ref(path + '/stats').on('value', snap => {
-            const d = snap.val();
-            if (d) {
-                document.getElementById('total').innerText = d.total || 0;
-                document.getElementById('winrate').innerText = (d.win_rate || 0).toFixed(1) + '%';
-            }
-        });
-        db.ref(path + '/open_positions').on('value', snap => {
-            const data = snap.val();
-            const c = document.getElementById('positionsList');
-            if (!data) { c.innerHTML = '<div style="color:#666; text-align:center; padding:20px;">Нет позиций</div>'; return; }
-            c.innerHTML = Object.values(data).map(p => `
-                <div class="position-card ${p.side}">
-                    <div class="pos-header">
-                        <span class="pos-symbol">${p.symbol}</span>
-                        <span class="pos-side ${p.side}">${p.side === 'BUY' ? 'LONG' : 'SHORT'}</span>
-                    </div>
-                    <div class="pos-details">
-                        <div>Вход: $${p.entry?.toFixed(6)}</div><div>Стоп: $${p.stop?.toFixed(6)}</div>
-                        <div>Объём: $${p.position_usdt?.toFixed(2)}</div><div>Маржа: $${p.margin_usdt?.toFixed(2)}</div>
-                    </div>
-                </div>
-            `).join('');
-        });
-        db.ref(path + '/trades').on('value', snap => {
-            const data = snap.val();
-            const c = document.getElementById('tradesList');
-            if (!data) { c.innerHTML = '<div style="color:#666; text-align:center; padding:20px;">Нет сделок</div>'; return; }
-            c.innerHTML = Object.values(data).reverse().slice(0, 20).map(t => `
-                <div class="trade-item">
-                    <span>${t.symbol} ${t.side}</span>
-                    <span style="color:#888;">${t.reason || ''}</span>
-                    <span class="trade-profit ${t.profit >= 0 ? 'positive' : 'negative'}">${t.profit >= 0 ? '+' : ''}$${t.profit?.toFixed(4)}</span>
-                </div>
-            `).join('');
-        });
+        db.ref(path + '/current').on('value', s => { const d = s.val(); if (d) document.getElementById('balance').innerText = (d.balance||0).toFixed(2); });
+        db.ref(path + '/stats').on('value', s => { const d = s.val(); if (d) { document.getElementById('total').innerText = d.total||0; document.getElementById('winrate').innerText = (d.win_rate||0).toFixed(1)+'%'; }});
+        db.ref(path + '/open_positions').on('value', s => { const d = s.val(); const e = document.getElementById('positions'); if (!d) { e.innerHTML = 'Нет позиций'; return; } e.innerHTML = Object.values(d).map(p => `<div class="pos ${p.side}"><b>${p.symbol}</b> ${p.side} | Вход: $${p.entry?.toFixed(4)}</div>`).join(''); });
+        db.ref(path + '/trades').on('value', s => { const d = s.val(); const e = document.getElementById('trades'); if (!d) { e.innerHTML = 'Нет сделок'; return; } e.innerHTML = Object.values(d).reverse().slice(0,20).map(t => `<div class="pos"><b>${t.symbol}</b> | <span class="${t.profit>=0?'green':'red'}">${t.profit>=0?'+':''}$${t.profit?.toFixed(4)}</span></div>`).join(''); });
     </script>
 </body>
 </html>
