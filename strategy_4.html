@@ -65,7 +65,7 @@
     if (!uid) { document.getElementById('main').innerHTML = '<div style="text-align:center;padding:40px;color:#666;"><a href="index.html" style="color:#667eea;">← Войдите на главной</a></div>'; }
     else {
         document.getElementById('uname').innerText = uid;
-        firebase.initializeApp({databaseURL:"https://bybittradingapp-d53cf-default-rtdb.firebaseio.com"});
+        if (!firebase.apps.length) { firebase.initializeApp({databaseURL:"https://bybittradingapp-d53cf-default-rtdb.firebaseio.com"}); }
         const db = firebase.database(), S = "strategy_4", B = `strategies/${S}/users/${uid}`;
         
         db.ref(B+'/current').on('value', s => {
