@@ -24,12 +24,15 @@
         .trend-row { display: flex; justify-content: space-between; margin: 12px 0; }
         .pos { background: #1a1a24; border-radius: 12px; padding: 14px; margin: 8px 0; border-left: 4px solid #4CAF50; }
         .pos.SELL { border-left-color: #F44336; }
-        .pos-header { display: flex; justify-content: space-between; align-items: center; }
+        .pos-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
         .pos-symbol { font-size: 18px; font-weight: bold; }
         .pos-side { padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
         .pos-side.BUY { background: #4CAF5022; color: #4CAF50; }
         .pos-side.SELL { background: #F4433622; color: #F44336; }
         .pos-info { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 10px; font-size: 13px; color: #888; }
+        .trail-badge { display: inline-block; background: #667eea22; color: #667eea; padding: 2px 8px; border-radius: 8px; font-size: 11px; }
+        .trail-info { background: #667eea11; border: 1px solid #667eea33; border-radius: 10px; padding: 10px; margin: 10px 0; text-align: center; }
+        .trail-info span { color: #667eea; font-weight: bold; }
         .trade { background: #1a1a24; border-radius: 12px; padding: 12px; margin: 6px 0; }
         .trade-header { display: flex; justify-content: space-between; }
         .profit-badge { padding: 4px 10px; border-radius: 20px; font-weight: bold; font-size: 14px; }
@@ -44,8 +47,13 @@
     <a href="index.html" class="back">← Назад</a>
     <div class="header">
         <h1>🕐 Стратегия 4</h1>
-        <p>Тренд 60 минут | Вход > $5 000 | По тренду | Стоп -1%</p>
+        <p>Тренд 60 минут | Вход > $5 000 | По тренду | Стоп -2% | Трейлинг +1% → +0.6%</p>
     </div>
+    
+    <div class="trail-info">
+        🛡️ <span>Трейлинг:</span> при достижении +1% прибыли → стоп переносится на +0.6% от входа
+    </div>
+    
     <div class="stats">
         <div class="stat"><div class="stat-val green" id="balance">1000</div><div class="stat-lbl">💰 Баланс $</div></div>
         <div class="stat"><div class="stat-val" id="floating">0.00</div><div class="stat-lbl">📈 Плавающий PnL</div></div>
@@ -106,13 +114,15 @@
             document.getElementById('posCount').innerText = arr.length;
             e.innerHTML = arr.map(p => {
                 const pnl = p.side==='BUY' ? (p.current_price-p.entry)*p.quantity : (p.entry-p.current_price)*p.quantity;
+                const pnlPct = (pnl/p.margin_usdt*100)||0;
+                const profitFromEntry = p.side==='BUY' ? ((p.current_price-p.entry)/p.entry*100) : ((p.entry-p.current_price)/p.entry*100);
                 return `<div class="pos ${p.side}">
                     <div class="pos-header">
-                        <span class="pos-symbol">${p.symbol} <span class="pos-side ${p.side}">${p.side==='BUY'?'LONG':'SHORT'}</span></span>
-                        <span class="${pnl>=0?'green':'red'}">${pnl>=0?'+':''}$${pnl.toFixed(4)}</span>
+                        <span class="pos-symbol">${p.symbol} <span class="pos-side ${p.side}">${p.side==='BUY'?'LONG':'SHORT'}</span>${p.trailing_activated?' <span class="trail-badge">🛡️ ТРЕЙЛИНГ +0.6%</span>':''}</span>
+                        <span class="${pnl>=0?'green':'red'}">${pnl>=0?'+':''}$${pnl.toFixed(4)} (${profitFromEntry>=0?'+':''}${profitFromEntry.toFixed(2)}%)</span>
                     </div>
                     <div class="pos-info">
-                        <div>Вход: $${p.entry?.toFixed(4)}</div><div>Стоп: $${p.stop?.toFixed(4)}</div>
+                        <div>Вход: $${p.entry?.toFixed(4)}</div><div>Стоп: $${p.stop?.toFixed(4)} ${p.trailing_activated?'(трейлинг)':'(начальный -2%)'}</div>
                         <div>Объём: $${p.position_usdt?.toFixed(2)}</div><div>Маржа: $${p.margin_usdt?.toFixed(2)}</div>
                     </div>
                 </div>`;
