@@ -9,48 +9,84 @@
         body { background: #0a0a0f; color: #fff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 20px; }
         .header { text-align: center; padding: 30px 20px; margin-bottom: 30px; }
         .header h1 { font-size: 28px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .header p { color: #888; margin-top: 8px; }
+        .header p { color: #888; margin-top: 8px; font-size: 14px; }
         .strategies { display: grid; gap: 16px; max-width: 800px; margin: 0 auto; }
         .strategy-card { background: #13131a; border-radius: 20px; padding: 24px; border: 1px solid #222; cursor: pointer; transition: all 0.3s; text-decoration: none; color: #fff; display: block; }
         .strategy-card:hover { border-color: #667eea; transform: translateY(-2px); }
         .strategy-number { font-size: 14px; color: #667eea; margin-bottom: 8px; }
         .strategy-name { font-size: 20px; font-weight: bold; margin-bottom: 12px; }
-        .strategy-desc { color: #888; font-size: 14px; line-height: 1.6; }
+        .strategy-desc { color: #888; font-size: 13px; line-height: 1.6; }
+        .strategy-params { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+        .param-badge { background: #1a1a24; padding: 4px 10px; border-radius: 20px; font-size: 11px; color: #aaa; }
         .footer { text-align: center; margin-top: 40px; color: #666; font-size: 12px; }
     </style>
 </head>
 <body>
     <div class="header">
         <h1>🚀 BYBIT MULTI-STRATEGY TRACKER</h1>
-        <p>5 стратегий в реальном времени</p>
+        <p>5 стратегий | Реальные цены Bybit | Ликвидации Binance | Обновление в реальном времени</p>
     </div>
     <div class="strategies">
         <a href="strategy_1.html" class="strategy-card">
             <div class="strategy-number">СТРАТЕГИЯ 1</div>
             <div class="strategy-name">📊 Все ликвидации > $1 000</div>
-            <div class="strategy-desc">Вход по каждой ликвидации. BUY → SHORT, SELL → LONG. Стоп -1%</div>
+            <div class="strategy-desc">Вход по каждой ликвидации. BUY → SHORT, SELL → LONG</div>
+            <div class="strategy-params">
+                <span class="param-badge">Стоп -0.5%</span>
+                <span class="param-badge">Трейлинг ступенчатый</span>
+                <span class="param-badge">1 сделка/мин</span>
+                <span class="param-badge">Кулдаун 15мин</span>
+                <span class="param-badge">Фандинг ≤0.2%</span>
+            </div>
         </a>
         <a href="strategy_2.html" class="strategy-card">
             <div class="strategy-number">СТРАТЕГИЯ 2</div>
             <div class="strategy-name">📈 Тренд 15 минут / 80%</div>
-            <div class="strategy-desc">Вход при формировании тренда ≥80%. Стоп -1%</div>
+            <div class="strategy-desc">Вход ПО тренду. BUY тренд → LONG, SELL тренд → SHORT</div>
+            <div class="strategy-params">
+                <span class="param-badge">Стоп -1%</span>
+                <span class="param-badge">Тренд 15мин/80%</span>
+                <span class="param-badge">По тренду</span>
+                <span class="param-badge">Кулдаун 15мин</span>
+                <span class="param-badge">Фандинг ≤0.2%</span>
+            </div>
         </a>
         <a href="strategy_3.html" class="strategy-card">
             <div class="strategy-number">СТРАТЕГИЯ 3</div>
             <div class="strategy-name">💎 Элитные монеты > $10 000</div>
-            <div class="strategy-desc">10 избранных монет. STRK, LDO, WLD, XRP, ETH, SUI, ALGO, LINK, AAVE</div>
+            <div class="strategy-desc">10 избранных монет: STRK, LDO, WLD, XRP, ETH, SUI, ALGO, LINK, AAVE</div>
+            <div class="strategy-params">
+                <span class="param-badge">Стоп -1%</span>
+                <span class="param-badge">Только 10 монет</span>
+                <span class="param-badge">Кулдаун 15мин</span>
+                <span class="param-badge">Фандинг ≤0.2%</span>
+            </div>
         </a>
         <a href="strategy_4.html" class="strategy-card">
             <div class="strategy-number">СТРАТЕГИЯ 4</div>
             <div class="strategy-name">🕐 Тренд 60 минут + > $5 000</div>
-            <div class="strategy-desc">Вход по тренду за час. Стоп -1%</div>
+            <div class="strategy-desc">Вход ПРОТИВ тренда. BUY тренд → SHORT, SELL тренд → LONG</div>
+            <div class="strategy-params">
+                <span class="param-badge">Стоп -2%</span>
+                <span class="param-badge">Трейлинг +1%→+0.6%</span>
+                <span class="param-badge">Против тренда</span>
+                <span class="param-badge">Кулдаун 15мин</span>
+                <span class="param-badge">Фандинг ≤0.2%</span>
+            </div>
         </a>
         <a href="strategy_5.html" class="strategy-card">
             <div class="strategy-number">СТРАТЕГИЯ 5</div>
-            <div class="strategy-name">🐋 Крупные > $50 000 + трейлинг</div>
-            <div class="strategy-desc">Трейлинг +1.5%→+1%. 1 сделка/мин</div>
+            <div class="strategy-name">🐋 Крупные > $50 000 + тренд</div>
+            <div class="strategy-desc">Только очень крупные ликвидации. Тренд ≥80%</div>
+            <div class="strategy-params">
+                <span class="param-badge">Стоп -1%</span>
+                <span class="param-badge">Трейлинг +1.5%→+1%</span>
+                <span class="param-badge">1 сделка/мин</span>
+                <span class="param-badge">Тренд 80%</span>
+                <span class="param-badge">Фандинг ≤0.2%</span>
+            </div>
         </a>
     </div>
-    <div class="footer">🟢 Данные обновляются в реальном времени</div>
+    <div class="footer">🟢 Данные обновляются в реальном времени • Firebase Realtime Database • Bybit REST API</div>
 </body>
 </html>
