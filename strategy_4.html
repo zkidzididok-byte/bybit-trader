@@ -3,21 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Стратегия 1 — Все ликвидации</title>
+    <title>Стратегия 4 — Тренд 60мин</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #0a0a0f; color: #fff; font-family: Arial; padding: 20px; }
         .back { color: #667eea; text-decoration: none; font-size: 14px; display: inline-block; margin-bottom: 16px; }
-        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 16px; margin-bottom: 20px; }
-        .header h1 { font-size: 20px; }
-        .header p { color: #ddd; font-size: 13px; margin-top: 6px; }
-        .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
+        .header { background: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%); padding: 20px; border-radius: 16px; margin-bottom: 20px; }
+        .header h1 { font-size: 20px; color: #000; }
+        .header p { color: #333; font-size: 13px; margin-top: 6px; }
+        .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
         .stat { background: #13131a; border-radius: 14px; padding: 16px; text-align: center; border: 1px solid #222; }
         .stat-val { font-size: 24px; font-weight: bold; }
         .stat-lbl { font-size: 11px; color: #666; margin-top: 4px; }
         .green { color: #4CAF50; } .red { color: #F44336; } .gold { color: #FFD700; }
         .card { background: #13131a; border-radius: 16px; padding: 20px; margin-bottom: 16px; border: 1px solid #222; }
         .card h3 { margin-bottom: 12px; color: #888; }
+        .trend-bar { height: 10px; background: #2a2a3a; border-radius: 5px; margin: 8px 0; overflow: hidden; }
+        .trend-fill { height: 100%; border-radius: 5px; }
+        .trend-fill.buy { background: #4CAF50; } .trend-fill.sell { background: #F44336; }
+        .trend-row { display: flex; justify-content: space-between; margin: 12px 0; }
         .pos { background: #1a1a24; border-radius: 12px; padding: 14px; margin: 8px 0; border-left: 4px solid #4CAF50; }
         .pos.SELL { border-left-color: #F44336; }
         .pos-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
@@ -36,19 +40,28 @@
 </head>
 <body>
     <a href="index.html" class="back">← Назад</a>
-    <div class="header"><h1>📊 Стратегия 1</h1><p>Все ликвидации > $1 000 | BUY → SHORT | SELL → LONG | Стоп -1% | Трейлинг +1.25%→+1%, +3%→+1.5%, +5%→+3%, +10%→+7.5%, +25%→+20% | 1/мин | Кулдаун 15мин | Фандинг ≤0.2%</p></div>
+    <div class="header"><h1>🕐 Стратегия 4</h1><p>Тренд 60мин/70% > $5K | ПО ТРЕНДУ | Стоп -2% | Трейлинг +1%→+0.6% | Кулдаун 15мин | Фандинг ≤0.2%</p></div>
     <div class="stats">
         <div class="stat"><div class="stat-val green" id="balance">1000</div><div class="stat-lbl">💰 Баланс $</div></div>
         <div class="stat"><div class="stat-val" id="floating">0.00</div><div class="stat-lbl">📈 Плавающий PnL</div></div>
         <div class="stat"><div class="stat-val gold" id="winrate">0%</div><div class="stat-lbl">🎯 Win Rate</div></div>
+        <div class="stat"><div class="stat-val" id="trendTotal" style="color:#a18cd1;">0</div><div class="stat-lbl">📊 Ликв. (60мин)</div></div>
+    </div>
+    <div class="card"><h3>📊 Тренд (60мин / 70%)</h3>
+        <div class="trend-row"><span>🟢 BUY</span><span id="buyPct">0%</span></div>
+        <div class="trend-bar"><div class="trend-fill buy" id="buyBar" style="width:0%"></div></div>
+        <div class="trend-row"><span>🔴 SELL</span><span id="sellPct">0%</span></div>
+        <div class="trend-bar"><div class="trend-fill sell" id="sellBar" style="width:0%"></div></div>
+        <p style="text-align:center; margin-top:12px; font-weight:bold;" id="trendSignal">⏳ Ожидание...</p>
     </div>
     <div class="card"><h3>📌 Позиции (<span id="posCount">0</span>)</h3><div id="positions">Нет позиций</div></div>
     <div class="card"><h3>📋 История (<span id="tradeCount">0</span>)</h3><div id="trades">Нет сделок</div></div>
     <script>
         firebase.initializeApp({ databaseURL: "https://bybittradingapp-d53cf-default-rtdb.firebaseio.com" });
-        const db = firebase.database(); const uid = 'zkidz'; const path = 'strategies/strategy_1/users/' + uid;
+        const db = firebase.database(); const uid = 'zkidz'; const path = 'strategies/strategy_4/users/' + uid;
         db.ref(path + '/current').on('value', s => { const d = s.val(); if (d) { document.getElementById('balance').innerText = (d.balance||1000).toFixed(2); document.getElementById('floating').innerText = (d.floating_pnl>=0?'+':'')+(d.floating_pnl||0).toFixed(2); } });
         db.ref(path + '/stats').on('value', s => { const d = s.val(); if (d) document.getElementById('winrate').innerText = (d.win_rate||0).toFixed(1)+'%'; });
+        db.ref(path + '/trend').on('value', s => { const d = s.val(); if (d) { document.getElementById('buyPct').innerText = (d.buy_pct||0)+'%'; document.getElementById('sellPct').innerText = (d.sell_pct||0)+'%'; document.getElementById('buyBar').style.width = (d.buy_pct||0)+'%'; document.getElementById('sellBar').style.width = (d.sell_pct||0)+'%'; document.getElementById('trendTotal').innerText = d.total||0; const sig = document.getElementById('trendSignal'); if ((d.buy_pct||0) >= 70) { sig.innerText = '📈 BUY тренд ≥70% — вход в LONG'; sig.style.color = '#4CAF50'; } else if ((d.sell_pct||0) >= 70) { sig.innerText = '📉 SELL тренд ≥70% — вход в SHORT'; sig.style.color = '#F44336'; } else { sig.innerText = '⏸️ Нет тренда ≥70%'; sig.style.color = '#888'; } } });
         db.ref(path + '/open_positions').on('value', s => { const d = s.val(); const e = document.getElementById('positions'); if (!d) { e.innerHTML = '<p style="color:#666">Нет позиций</p>'; document.getElementById('posCount').innerText = '0'; return; } const arr = Object.values(d); document.getElementById('posCount').innerText = arr.length; e.innerHTML = arr.map(p => { const pnl = p.side==='BUY' ? (p.current_price-p.entry)*p.quantity : (p.entry-p.current_price)*p.quantity; const pf = p.side==='BUY' ? ((p.current_price-p.entry)/p.entry*100) : ((p.entry-p.current_price)/p.entry*100); return `<div class="pos ${p.side}"><div class="pos-header"><span class="pos-symbol">${p.symbol} <span class="pos-side ${p.side}">${p.side==='BUY'?'LONG':'SHORT'}</span>${p.trailing_activated?' <span class="trail-badge">🛡️ ТРЕЙЛИНГ</span>':''}</span><span class="${pnl>=0?'green':'red'}">${pnl>=0?'+':''}$${pnl.toFixed(4)} (${pf>=0?'+':''}${pf.toFixed(2)}%)</span></div><div class="pos-info"><div>Вход: $${p.entry?.toFixed(4)}</div><div>Стоп: $${p.stop?.toFixed(4)}</div><div>Объём: $${p.position_usdt?.toFixed(2)}</div><div>Время: ${p.open_time_str||'—'}</div></div></div>`; }).join(''); });
         db.ref(path + '/trades').on('value', s => { const d = s.val(); const e = document.getElementById('trades'); if (!d) { e.innerHTML = '<p style="color:#666">Нет сделок</p>'; document.getElementById('tradeCount').innerText = '0'; return; } const arr = Object.values(d).reverse().slice(0,30); document.getElementById('tradeCount').innerText = arr.length; e.innerHTML = arr.map(t => `<div class="trade"><div class="trade-header"><span><b>${t.symbol}</b> ${t.side} | ${t.reason||''}</span><span class="profit-badge ${t.profit>=0?'win':'loss'}">${t.profit>=0?'+':''}$${t.profit?.toFixed(4)}</span></div><div style="font-size:12px; color:#666; margin-top:6px;">Вход: $${t.entry?.toFixed(4)} → Выход: $${t.exit?.toFixed(4)} | ${t.profit_percent>=0?'+':''}${t.profit_percent?.toFixed(2)}% | ${t.open_time_str||''}</div></div>`).join(''); });
     </script>
