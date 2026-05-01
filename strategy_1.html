@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Стратегия 1</title>
+    <title>Стратегия 1 — Все ликвидации</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #0a0a0f; color: #fff; font-family: Arial; padding: 20px; }
@@ -23,25 +23,20 @@
         .pos-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
         .pos-symbol { font-size: 18px; font-weight: bold; }
         .pos-side { padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
-        .pos-side.BUY { background: #4CAF5022; color: #4CAF50; }
-        .pos-side.SELL { background: #F4433622; color: #F44336; }
+        .pos-side.BUY { background: #4CAF5022; color: #4CAF50; } .pos-side.SELL { background: #F4433622; color: #F44336; }
         .pos-info { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 10px; font-size: 13px; color: #888; }
         .trail-badge { background: #667eea22; color: #667eea; padding: 2px 8px; border-radius: 8px; font-size: 11px; }
         .trade { background: #1a1a24; border-radius: 12px; padding: 12px; margin: 6px 0; }
         .trade-header { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 6px; }
         .profit-badge { padding: 4px 10px; border-radius: 20px; font-weight: bold; font-size: 14px; }
-        .profit-badge.win { background: #4CAF5022; color: #4CAF50; }
-        .profit-badge.loss { background: #F4433622; color: #F44336; }
+        .profit-badge.win { background: #4CAF5022; color: #4CAF50; } .profit-badge.loss { background: #F4433622; color: #F44336; }
     </style>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
 </head>
 <body>
     <a href="index.html" class="back">← Назад</a>
-    <div class="header">
-        <h1>📊 Стратегия 1</h1>
-        <p>Все ликвидации > $1 000 | BUY → SHORT | SELL → LONG | Стоп -0.5% | Трейлинг ступенчатый | 1 сделка/мин | Фандинг ≤0.2%</p>
-    </div>
+    <div class="header"><h1>📊 Стратегия 1</h1><p>Все ликвидации > $1 000 | BUY → SHORT | SELL → LONG | Стоп -1% | Трейлинг +1.25%→+1%, +3%→+1.5%, +5%→+3%, +10%→+7.5%, +25%→+20% | 1/мин | Кулдаун 15мин | Фандинг ≤0.2%</p></div>
     <div class="stats">
         <div class="stat"><div class="stat-val green" id="balance">1000</div><div class="stat-lbl">💰 Баланс $</div></div>
         <div class="stat"><div class="stat-val" id="floating">0.00</div><div class="stat-lbl">📈 Плавающий PnL</div></div>
@@ -51,30 +46,11 @@
     <div class="card"><h3>📋 История (<span id="tradeCount">0</span>)</h3><div id="trades">Нет сделок</div></div>
     <script>
         firebase.initializeApp({ databaseURL: "https://bybittradingapp-d53cf-default-rtdb.firebaseio.com" });
-        const db = firebase.database();
-        const uid = 'zkidz';
-        const path = 'strategies/strategy_1/users/' + uid;
-        db.ref(path + '/current').on('value', s => {
-            const d = s.val();
-            if (d) { document.getElementById('balance').innerText = (d.balance||1000).toFixed(2); document.getElementById('floating').innerText = (d.floating_pnl>=0?'+':'')+(d.floating_pnl||0).toFixed(2); }
-        });
+        const db = firebase.database(); const uid = 'zkidz'; const path = 'strategies/strategy_1/users/' + uid;
+        db.ref(path + '/current').on('value', s => { const d = s.val(); if (d) { document.getElementById('balance').innerText = (d.balance||1000).toFixed(2); document.getElementById('floating').innerText = (d.floating_pnl>=0?'+':'')+(d.floating_pnl||0).toFixed(2); } });
         db.ref(path + '/stats').on('value', s => { const d = s.val(); if (d) document.getElementById('winrate').innerText = (d.win_rate||0).toFixed(1)+'%'; });
-        db.ref(path + '/open_positions').on('value', s => {
-            const d = s.val(); const e = document.getElementById('positions');
-            if (!d) { e.innerHTML = '<p style="color:#666">Нет позиций</p>'; document.getElementById('posCount').innerText = '0'; return; }
-            const arr = Object.values(d); document.getElementById('posCount').innerText = arr.length;
-            e.innerHTML = arr.map(p => {
-                const pnl = p.side==='BUY' ? (p.current_price-p.entry)*p.quantity : (p.entry-p.current_price)*p.quantity;
-                const profitFromEntry = p.side==='BUY' ? ((p.current_price-p.entry)/p.entry*100) : ((p.entry-p.current_price)/p.entry*100);
-                return `<div class="pos ${p.side}"><div class="pos-header"><span class="pos-symbol">${p.symbol} <span class="pos-side ${p.side}">${p.side==='BUY'?'LONG':'SHORT'}</span>${p.trailing_activated?' <span class="trail-badge">🛡️ ТРЕЙЛИНГ</span>':''}</span><span class="${pnl>=0?'green':'red'}">${pnl>=0?'+':''}$${pnl.toFixed(4)} (${profitFromEntry>=0?'+':''}${profitFromEntry.toFixed(2)}%)</span></div><div class="pos-info"><div>Вход: $${p.entry?.toFixed(4)}</div><div>Стоп: $${p.stop?.toFixed(4)}</div><div>Объём: $${p.position_usdt?.toFixed(2)}</div><div>Время: ${p.open_time_str||'—'}</div></div></div>`;
-            }).join('');
-        });
-        db.ref(path + '/trades').on('value', s => {
-            const d = s.val(); const e = document.getElementById('trades');
-            if (!d) { e.innerHTML = '<p style="color:#666">Нет сделок</p>'; document.getElementById('tradeCount').innerText = '0'; return; }
-            const arr = Object.values(d).reverse().slice(0,30); document.getElementById('tradeCount').innerText = arr.length;
-            e.innerHTML = arr.map(t => `<div class="trade"><div class="trade-header"><span><b>${t.symbol}</b> ${t.side} | ${t.reason||''}</span><span class="profit-badge ${t.profit>=0?'win':'loss'}">${t.profit>=0?'+':''}$${t.profit?.toFixed(4)}</span></div><div style="font-size:12px; color:#666; margin-top:6px;">Вход: $${t.entry?.toFixed(4)} → Выход: $${t.exit?.toFixed(4)} | ${t.profit_percent>=0?'+':''}${t.profit_percent?.toFixed(2)}% | ${t.open_time_str||''}</div></div>`).join('');
-        });
+        db.ref(path + '/open_positions').on('value', s => { const d = s.val(); const e = document.getElementById('positions'); if (!d) { e.innerHTML = '<p style="color:#666">Нет позиций</p>'; document.getElementById('posCount').innerText = '0'; return; } const arr = Object.values(d); document.getElementById('posCount').innerText = arr.length; e.innerHTML = arr.map(p => { const pnl = p.side==='BUY' ? (p.current_price-p.entry)*p.quantity : (p.entry-p.current_price)*p.quantity; const pf = p.side==='BUY' ? ((p.current_price-p.entry)/p.entry*100) : ((p.entry-p.current_price)/p.entry*100); return `<div class="pos ${p.side}"><div class="pos-header"><span class="pos-symbol">${p.symbol} <span class="pos-side ${p.side}">${p.side==='BUY'?'LONG':'SHORT'}</span>${p.trailing_activated?' <span class="trail-badge">🛡️ ТРЕЙЛИНГ</span>':''}</span><span class="${pnl>=0?'green':'red'}">${pnl>=0?'+':''}$${pnl.toFixed(4)} (${pf>=0?'+':''}${pf.toFixed(2)}%)</span></div><div class="pos-info"><div>Вход: $${p.entry?.toFixed(4)}</div><div>Стоп: $${p.stop?.toFixed(4)}</div><div>Объём: $${p.position_usdt?.toFixed(2)}</div><div>Время: ${p.open_time_str||'—'}</div></div></div>`; }).join(''); });
+        db.ref(path + '/trades').on('value', s => { const d = s.val(); const e = document.getElementById('trades'); if (!d) { e.innerHTML = '<p style="color:#666">Нет сделок</p>'; document.getElementById('tradeCount').innerText = '0'; return; } const arr = Object.values(d).reverse().slice(0,30); document.getElementById('tradeCount').innerText = arr.length; e.innerHTML = arr.map(t => `<div class="trade"><div class="trade-header"><span><b>${t.symbol}</b> ${t.side} | ${t.reason||''}</span><span class="profit-badge ${t.profit>=0?'win':'loss'}">${t.profit>=0?'+':''}$${t.profit?.toFixed(4)}</span></div><div style="font-size:12px; color:#666; margin-top:6px;">Вход: $${t.entry?.toFixed(4)} → Выход: $${t.exit?.toFixed(4)} | ${t.profit_percent>=0?'+':''}${t.profit_percent?.toFixed(2)}% | ${t.open_time_str||''}</div></div>`).join(''); });
     </script>
 </body>
 </html>
