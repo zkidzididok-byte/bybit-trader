@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Стратегия 6 — SuperBollingerTrend</title>
+    <title>Стратегия 6 — Super Trend</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #0a0a0f; color: #fff; font-family: Arial; padding: 20px; }
@@ -11,13 +11,14 @@
         .header { background: linear-gradient(135deg, #0ba360 0%, #3cba92 100%); padding: 20px; border-radius: 16px; margin-bottom: 20px; }
         .header h1 { font-size: 20px; }
         .header p { color: #ddd; font-size: 13px; margin-top: 6px; }
-        .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
+        .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
         .stat { background: #13131a; border-radius: 14px; padding: 16px; text-align: center; border: 1px solid #222; }
-        .stat-val { font-size: 24px; font-weight: bold; }
+        .stat-val { font-size: 22px; font-weight: bold; }
         .stat-lbl { font-size: 11px; color: #666; margin-top: 4px; }
         .green { color: #4CAF50; } .red { color: #F44336; } .gold { color: #FFD700; }
         .card { background: #13131a; border-radius: 16px; padding: 20px; margin-bottom: 16px; border: 1px solid #222; }
         .card h3 { margin-bottom: 12px; color: #888; }
+        .chart-container { height: 500px; margin-bottom: 20px; border-radius: 16px; overflow: hidden; }
         .pos { background: #1a1a24; border-radius: 12px; padding: 14px; margin: 8px 0; border-left: 4px solid #4CAF50; }
         .pos.SELL { border-left-color: #F44336; }
         .pos-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
@@ -30,27 +31,166 @@
         .trade-header { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 6px; }
         .profit-badge { padding: 4px 10px; border-radius: 20px; font-weight: bold; font-size: 14px; }
         .profit-badge.win { background: #4CAF5022; color: #4CAF50; } .profit-badge.loss { background: #F4433622; color: #F44336; }
+        .symbol-selector { margin-bottom: 16px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .symbol-selector input { background: #1a1a24; color: #fff; border: 1px solid #333; padding: 10px 16px; border-radius: 10px; font-size: 14px; width: 200px; }
+        .symbol-selector select { background: #1a1a24; color: #fff; border: 1px solid #333; padding: 10px 16px; border-radius: 10px; font-size: 14px; max-width: 300px; }
+        .symbol-selector button { background: #0ba360; color: #fff; border: none; padding: 10px 20px; border-radius: 10px; cursor: pointer; font-weight: bold; }
+        .tf-selector { display: flex; gap: 6px; margin-bottom: 16px; }
+        .tf-btn { background: #1a1a24; border: 1px solid #333; color: #888; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; }
+        .tf-btn.active { background: #0ba360; color: #fff; border-color: #0ba360; }
     </style>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
 </head>
 <body>
     <a href="index.html" class="back">← Назад</a>
-    <div class="header"><h1>📉 Стратегия 6</h1><p>SuperBollingerTrend | Period 99, Mult 9 | Вход при смене тренда | Без кулдауна | Стоп -1% | Трейлинг +1.25%→+1%... | Все фьючерсы Bybit</p></div>
+    <div class="header">
+        <h1>📉 Стратегия 6 — Super Trend</h1>
+        <p>Super Trend ATR | Period 99, Mult 9 | Вход при смене тренда | Все фьючерсы Bybit</p>
+    </div>
+    
     <div class="stats">
         <div class="stat"><div class="stat-val green" id="balance">1000</div><div class="stat-lbl">💰 Баланс $</div></div>
         <div class="stat"><div class="stat-val" id="floating">0.00</div><div class="stat-lbl">📈 Плавающий PnL</div></div>
         <div class="stat"><div class="stat-val gold" id="winrate">0%</div><div class="stat-lbl">🎯 Win Rate</div></div>
+        <div class="stat"><div class="stat-val" id="total" style="color:#0ba360;">0</div><div class="stat-lbl">📊 Сделок</div></div>
     </div>
+    
+    <div class="card">
+        <h3>📈 График TradingView</h3>
+        <div class="symbol-selector">
+            <input type="text" id="symbolSearch" placeholder="🔍 Поиск монеты..." oninput="filterSymbols()">
+            <select id="symbolSelect" onchange="changeSymbol()"></select>
+            <button onclick="changeSymbol()">🔄 Загрузить</button>
+        </div>
+        <div class="tf-selector" id="tfButtons">
+            <button class="tf-btn" data-tf="1">1м</button>
+            <button class="tf-btn" data-tf="5">5м</button>
+            <button class="tf-btn active" data-tf="15">15м</button>
+            <button class="tf-btn" data-tf="60">1ч</button>
+        </div>
+        <div class="chart-container">
+            <div id="tv_chart" style="height:500px;"></div>
+        </div>
+    </div>
+    
     <div class="card"><h3>📌 Позиции (<span id="posCount">0</span>)</h3><div id="positions">Нет позиций</div></div>
     <div class="card"><h3>📋 История (<span id="tradeCount">0</span>)</h3><div id="trades">Нет сделок</div></div>
+
+    <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
     <script>
+        let currentSymbol = 'BTCUSDT';
+        let currentTF = '15';
+        let allSymbols = [];
+        
+        // Загрузка всех фьючерсов Bybit
+        async function loadAllSymbols() {
+            try {
+                const resp = await fetch('https://api.bybit.com/v5/market/instruments-info?category=linear');
+                const data = await resp.json();
+                if (data.retCode === 0) {
+                    allSymbols = data.result.list
+                        .filter(s => s.symbol.endsWith('USDT'))
+                        .map(s => s.symbol)
+                        .sort();
+                    filterSymbols();
+                }
+            } catch(e) {
+                allSymbols = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'DOGEUSDT', 'XRPUSDT'];
+                filterSymbols();
+            }
+        }
+        
+        function filterSymbols() {
+            const search = document.getElementById('symbolSearch').value.toUpperCase();
+            const select = document.getElementById('symbolSelect');
+            select.innerHTML = '';
+            const filtered = allSymbols.filter(s => s.includes(search));
+            filtered.forEach(sym => {
+                const opt = document.createElement('option');
+                opt.value = sym;
+                opt.textContent = sym.replace('USDT', '');
+                if (sym === currentSymbol) opt.selected = true;
+                select.appendChild(opt);
+            });
+        }
+        
+        function createChart() {
+            document.getElementById('tv_chart').innerHTML = '';
+            new TradingView.widget({
+                "container_id": "tv_chart",
+                "symbol": "BYBIT:" + currentSymbol,
+                "interval": currentTF,
+                "studies": ["SuperTrend@tv-basicstudies"],
+                "theme": "dark",
+                "style": "1",
+                "locale": "ru",
+                "toolbar_bg": "#0a0a0f",
+                "enable_publishing": false,
+                "hide_side_toolbar": true,
+                "allow_symbol_change": false,
+                "save_image": false,
+                "height": 500,
+                "width": "100%"
+            });
+        }
+        
+        function changeSymbol() {
+            currentSymbol = document.getElementById('symbolSelect').value;
+            createChart();
+        }
+        
+        document.querySelectorAll('.tf-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.tf-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                currentTF = this.dataset.tf;
+                createChart();
+            });
+        });
+        
+        loadAllSymbols().then(() => createChart());
+        
+        // Firebase данные
         firebase.initializeApp({ databaseURL: "https://bybittradingapp-d53cf-default-rtdb.firebaseio.com" });
-        const db = firebase.database(); const uid = 'zkidz'; const path = 'strategies/strategy_6/users/' + uid;
-        db.ref(path + '/current').on('value', s => { const d = s.val(); if (d) { document.getElementById('balance').innerText = (d.balance||1000).toFixed(2); document.getElementById('floating').innerText = (d.floating_pnl>=0?'+':'')+(d.floating_pnl||0).toFixed(2); } });
-        db.ref(path + '/stats').on('value', s => { const d = s.val(); if (d) document.getElementById('winrate').innerText = (d.win_rate||0).toFixed(1)+'%'; });
-        db.ref(path + '/open_positions').on('value', s => { const d = s.val(); const e = document.getElementById('positions'); if (!d) { e.innerHTML = '<p style="color:#666">Нет позиций</p>'; document.getElementById('posCount').innerText = '0'; return; } const arr = Object.values(d); document.getElementById('posCount').innerText = arr.length; e.innerHTML = arr.map(p => { const pnl = p.side==='BUY' ? (p.current_price-p.entry)*p.quantity : (p.entry-p.current_price)*p.quantity; const pf = p.side==='BUY' ? ((p.current_price-p.entry)/p.entry*100) : ((p.entry-p.current_price)/p.entry*100); return `<div class="pos ${p.side}"><div class="pos-header"><span class="pos-symbol">${p.symbol} <span class="pos-side ${p.side}">${p.side==='BUY'?'LONG':'SHORT'}</span>${p.trailing_activated?' <span class="trail-badge">🛡️ ТРЕЙЛИНГ</span>':''}</span><span class="${pnl>=0?'green':'red'}">${pnl>=0?'+':''}$${pnl.toFixed(4)} (${pf>=0?'+':''}${pf.toFixed(2)}%)</span></div><div class="pos-info"><div>Вход: $${p.entry?.toFixed(4)}</div><div>Стоп: $${p.stop?.toFixed(4)}</div><div>Объём: $${p.position_usdt?.toFixed(2)}</div><div>Время: ${p.open_time_str||'—'}</div></div></div>`; }).join(''); });
-        db.ref(path + '/trades').on('value', s => { const d = s.val(); const e = document.getElementById('trades'); if (!d) { e.innerHTML = '<p style="color:#666">Нет сделок</p>'; document.getElementById('tradeCount').innerText = '0'; return; } const arr = Object.values(d).reverse(); document.getElementById('tradeCount').innerText = arr.length; e.innerHTML = arr.map(t => `<div class="trade"><div class="trade-header"><span><b>${t.symbol}</b> ${t.side} | ${t.reason||''}</span><span class="profit-badge ${t.profit>=0?'win':'loss'}">${t.profit>=0?'+':''}$${t.profit?.toFixed(4)}</span></div><div style="font-size:12px; color:#666; margin-top:6px;">Вход: $${t.entry?.toFixed(4)} → Выход: $${t.exit?.toFixed(4)} | ${t.profit_percent>=0?'+':''}${t.profit_percent?.toFixed(2)}% | ${t.open_time_str||''}</div></div>`).join(''); });
+        const db = firebase.database();
+        const uid = 'zkidz';
+        const path = 'strategies/strategy_6/users/' + uid;
+        
+        db.ref(path + '/current').on('value', s => {
+            const d = s.val();
+            if (d) {
+                document.getElementById('balance').innerText = (d.balance||1000).toFixed(2);
+                document.getElementById('floating').innerText = (d.floating_pnl>=0?'+':'')+(d.floating_pnl||0).toFixed(2);
+            }
+        });
+        db.ref(path + '/stats').on('value', s => {
+            const d = s.val();
+            if (d) {
+                document.getElementById('winrate').innerText = (d.win_rate||0).toFixed(1)+'%';
+                document.getElementById('total').innerText = d.total||0;
+            }
+        });
+        db.ref(path + '/open_positions').on('value', s => {
+            const d = s.val();
+            const e = document.getElementById('positions');
+            if (!d) { e.innerHTML = '<p style="color:#666">Нет позиций</p>'; document.getElementById('posCount').innerText = '0'; return; }
+            const arr = Object.values(d);
+            document.getElementById('posCount').innerText = arr.length;
+            e.innerHTML = arr.map(p => {
+                const pnl = p.side==='BUY' ? (p.current_price-p.entry)*p.quantity : (p.entry-p.current_price)*p.quantity;
+                const pf = p.side==='BUY' ? ((p.current_price-p.entry)/p.entry*100) : ((p.entry-p.current_price)/p.entry*100);
+                return `<div class="pos ${p.side}"><div class="pos-header"><span class="pos-symbol">${p.symbol} <span class="pos-side ${p.side}">${p.side==='BUY'?'LONG':'SHORT'}</span>${p.trailing_activated?' <span class="trail-badge">🛡️ ТРЕЙЛИНГ</span>':''}</span><span class="${pnl>=0?'green':'red'}">${pnl>=0?'+':''}$${pnl.toFixed(4)} (${pf>=0?'+':''}${pf.toFixed(2)}%)</span></div><div class="pos-info"><div>Вход: $${p.entry?.toFixed(4)}</div><div>Стоп: $${p.stop?.toFixed(4)}</div><div>Объём: $${p.position_usdt?.toFixed(2)}</div><div>Время: ${p.open_time_str||'—'}</div></div></div>`;
+            }).join('');
+        });
+        db.ref(path + '/trades').on('value', s => {
+            const d = s.val();
+            const e = document.getElementById('trades');
+            if (!d) { e.innerHTML = '<p style="color:#666">Нет сделок</p>'; document.getElementById('tradeCount').innerText = '0'; return; }
+            const arr = Object.values(d).reverse();
+            document.getElementById('tradeCount').innerText = arr.length;
+            e.innerHTML = arr.map(t => `<div class="trade"><div class="trade-header"><span><b>${t.symbol}</b> ${t.side} | ${t.reason||''}</span><span class="profit-badge ${t.profit>=0?'win':'loss'}">${t.profit>=0?'+':''}$${t.profit?.toFixed(4)}</span></div><div style="font-size:12px; color:#666; margin-top:6px;">Вход: $${t.entry?.toFixed(4)} → Выход: $${t.exit?.toFixed(4)} | ${t.profit_percent>=0?'+':''}${t.profit_percent?.toFixed(2)}% | ${t.open_time_str||''}</div></div>`).join('');
+        });
     </script>
 </body>
 </html>
