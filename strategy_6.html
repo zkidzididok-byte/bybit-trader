@@ -103,9 +103,9 @@
                 wickUpColor: '#4CAF50', wickDownColor: '#F44336'
             });
             
-            upperLine = chart.addLineSeries({ color: '#F44336', lineWidth: 1, lastValueVisible: true, priceFormat: { type: 'price', precision: 2, minMove: 0.01 } });
-            lowerLine = chart.addLineSeries({ color: '#4CAF50', lineWidth: 1, lastValueVisible: true, priceFormat: { type: 'price', precision: 2, minMove: 0.01 } });
-            emaLine = chart.addLineSeries({ color: '#FFD700', lineWidth: 2, lastValueVisible: true, priceFormat: { type: 'price', precision: 2, minMove: 0.01 } });
+            upperLine = chart.addLineSeries({ color: '#F44336', lineWidth: 1, lastValueVisible: true, priceFormat: { type: 'price', precision: 6, minMove: 0.000001 } });
+            lowerLine = chart.addLineSeries({ color: '#4CAF50', lineWidth: 1, lastValueVisible: true, priceFormat: { type: 'price', precision: 6, minMove: 0.000001 } });
+            emaLine = chart.addLineSeries({ color: '#FFD700', lineWidth: 2, lastValueVisible: true, priceFormat: { type: 'price', precision: 6, minMove: 0.000001 } });
         }
         
         function calculateSuperBollinger(period, mult) {
