@@ -24,7 +24,7 @@
 <body>
     <div class="header">
         <h1>🚀 BYBIT MULTI-STRATEGY TRACKER</h1>
-        <p>5 стратегий | Реальные цены Bybit | Ликвидации Binance | Обновление в реальном времени</p>
+        <p>6 стратегий | Реальные цены Bybit | Ликвидации Binance | Обновление в реальном времени</p>
     </div>
     <div class="strategies">
         <a href="strategy_1.html" class="strategy-card">
@@ -32,7 +32,7 @@
             <div class="strategy-name">📊 Все ликвидации > $1 000</div>
             <div class="strategy-desc">Вход по каждой ликвидации. BUY → SHORT, SELL → LONG</div>
             <div class="strategy-params">
-                <span class="param-badge">Стоп -0.5%</span>
+                <span class="param-badge">Стоп -1%</span>
                 <span class="param-badge">Трейлинг ступенчатый</span>
                 <span class="param-badge">1 сделка/мин</span>
                 <span class="param-badge">Кулдаун 15мин</span>
@@ -64,25 +64,37 @@
         </a>
         <a href="strategy_4.html" class="strategy-card">
             <div class="strategy-number">СТРАТЕГИЯ 4</div>
-            <div class="strategy-name">🕐 Тренд 60 минут + > $5 000</div>
-            <div class="strategy-desc">Вход ПРОТИВ тренда. BUY тренд → SHORT, SELL тренд → LONG</div>
+            <div class="strategy-name">🕐 Тренд 60 минут / 70% + > $5 000</div>
+            <div class="strategy-desc">Вход ПО тренду. BUY тренд → LONG, SELL тренд → SHORT</div>
             <div class="strategy-params">
                 <span class="param-badge">Стоп -2%</span>
                 <span class="param-badge">Трейлинг +1%→+0.6%</span>
-                <span class="param-badge">Против тренда</span>
+                <span class="param-badge">Тренд 60мин/70%</span>
                 <span class="param-badge">Кулдаун 15мин</span>
                 <span class="param-badge">Фандинг ≤0.2%</span>
             </div>
         </a>
         <a href="strategy_5.html" class="strategy-card">
             <div class="strategy-number">СТРАТЕГИЯ 5</div>
-            <div class="strategy-name">🐋 Крупные > $50 000 + тренд</div>
+            <div class="strategy-name">🐋 Крупные > $50 000 + тренд 80%</div>
             <div class="strategy-desc">Только очень крупные ликвидации. Тренд ≥80%</div>
             <div class="strategy-params">
                 <span class="param-badge">Стоп -1%</span>
                 <span class="param-badge">Трейлинг +1.5%→+1%</span>
                 <span class="param-badge">1 сделка/мин</span>
                 <span class="param-badge">Тренд 80%</span>
+                <span class="param-badge">Фандинг ≤0.2%</span>
+            </div>
+        </a>
+        <a href="strategy_6.html" class="strategy-card">
+            <div class="strategy-number">СТРАТЕГИЯ 6</div>
+            <div class="strategy-name">📉 SuperBollingerTrend | Period 99, Mult 9</div>
+            <div class="strategy-desc">Технический анализ. Вход при смене тренда по индикатору</div>
+            <div class="strategy-params">
+                <span class="param-badge">Стоп -1%</span>
+                <span class="param-badge">Трейлинг ступенчатый</span>
+                <span class="param-badge">Без кулдауна</span>
+                <span class="param-badge">Все монеты Bybit</span>
                 <span class="param-badge">Фандинг ≤0.2%</span>
             </div>
         </a>
