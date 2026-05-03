@@ -19,6 +19,9 @@
         .card { background: #13131a; border-radius: 16px; padding: 20px; margin-bottom: 16px; border: 1px solid #222; }
         .card h3 { margin-bottom: 12px; color: #888; }
         .chart-container { height: 500px; margin-bottom: 20px; border-radius: 16px; overflow: hidden; background: #0a0a0f; position: relative; }
+        .legend { display: flex; gap: 20px; margin-bottom: 12px; font-size: 13px; }
+        .legend-item { display: flex; align-items: center; gap: 6px; }
+        .legend-color { width: 20px; height: 3px; border-radius: 2px; }
         .pos { background: #1a1a24; border-radius: 12px; padding: 14px; margin: 8px 0; border-left: 4px solid #4CAF50; }
         .pos.SELL { border-left-color: #F44336; }
         .pos-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
@@ -32,7 +35,7 @@
         .profit-badge { padding: 4px 10px; border-radius: 20px; font-weight: bold; font-size: 14px; }
         .profit-badge.win { background: #4CAF5022; color: #4CAF50; } .profit-badge.loss { background: #F4433622; color: #F44336; }
         .controls { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
-        .controls input, .controls select { background: #1a1a24; color: #fff; border: 1px solid #333; padding: 10px 16px; border-radius: 10px; font-size: 14px; }
+        .controls input { background: #1a1a24; color: #fff; border: 1px solid #333; padding: 10px 16px; border-radius: 10px; font-size: 14px; }
         .controls button { background: #0ba360; color: #fff; border: none; padding: 10px 20px; border-radius: 10px; cursor: pointer; font-weight: bold; }
         .tf-selector { display: flex; gap: 6px; }
         .tf-btn { background: #1a1a24; border: 1px solid #333; color: #888; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; }
@@ -49,7 +52,7 @@
     <a href="index.html" class="back">← Назад</a>
     <div class="header">
         <h1>📉 Стратегия 6 — SuperBollingerTrend (Expo) <span class="live-badge">● LIVE</span></h1>
-        <p>EMA + Bollinger Bands | Period 99, Mult 9 | Живой график | Обновление каждые 3 секунды</p>
+        <p>EMA(99) + Bollinger Bands(9) | Жёлтая = EMA | Красная/Зелёная = полосы | Точки = вход</p>
     </div>
     
     <div class="stats">
@@ -61,6 +64,13 @@
     
     <div class="card">
         <h3>📈 SuperBollingerTrend (Expo) — Live</h3>
+        <div class="legend">
+            <div class="legend-item"><div class="legend-color" style="background:#FFD700;"></div> EMA(99) — тренд</div>
+            <div class="legend-item"><div class="legend-color" style="background:#F44336;"></div> Верхняя полоса</div>
+            <div class="legend-item"><div class="legend-color" style="background:#4CAF50;"></div> Нижняя полоса</div>
+            <div class="legend-item"><div style="width:10px;height:10px;background:#00FF00;border-radius:50%;"></div> Вход LONG</div>
+            <div class="legend-item"><div style="width:10px;height:10px;background:#FF0000;border-radius:50%;"></div> Вход SHORT</div>
+        </div>
         <div class="controls">
             <input type="text" id="symbolSearch" placeholder="BTCUSDT" value="BTCUSDT" style="width:150px;">
             <button onclick="loadChart()">🔄 Загрузить</button>
@@ -78,12 +88,8 @@
     <div class="card"><h3>📋 История (<span id="tradeCount">0</span>)</h3><div id="trades">Нет сделок</div></div>
 
     <script>
-        // ========== ГРАФИК ==========
         let chart, candleSeries, upperLine, lowerLine, emaLine;
-        let currentTF = '15';
-        let currentSymbol = 'BTCUSDT';
-        let klinesData = [];
-        let liveInterval = null;
+        let currentTF = '15', currentSymbol = 'BTCUSDT', klinesData = [], liveInterval = null;
         
         function initChart() {
             if (chart) { try { chart.remove(); } catch(e) {} }
@@ -99,48 +105,38 @@
             });
             
             candleSeries = chart.addCandlestickSeries({
-                upColor: '#4CAF50', downColor: '#F44336', borderUpColor: '#4CAF50', borderDownColor: '#F44336',
+                upColor: '#4CAF50', downColor: '#F44336',
+                borderUpColor: '#4CAF50', borderDownColor: '#F44336',
                 wickUpColor: '#4CAF50', wickDownColor: '#F44336'
             });
             
-            upperLine = chart.addLineSeries({ color: '#F44336', lineWidth: 1, lastValueVisible: true, priceFormat: { type: 'price', precision: 6, minMove: 0.000001 } });
-            lowerLine = chart.addLineSeries({ color: '#4CAF50', lineWidth: 1, lastValueVisible: true, priceFormat: { type: 'price', precision: 6, minMove: 0.000001 } });
-            emaLine = chart.addLineSeries({ color: '#FFD700', lineWidth: 2, lastValueVisible: true, priceFormat: { type: 'price', precision: 6, minMove: 0.000001 } });
+            upperLine = chart.addLineSeries({ color: '#F44336', lineWidth: 1, lastValueVisible: true });
+            lowerLine = chart.addLineSeries({ color: '#4CAF50', lineWidth: 1, lastValueVisible: true });
+            emaLine = chart.addLineSeries({ color: '#FFD700', lineWidth: 2, lastValueVisible: true });
         }
         
         function calculateSuperBollinger(period, mult) {
             const closes = klinesData.map(k => k.close);
-            
             if (closes.length < period) return null;
             
-            // EMA
             const k = 2 / (period + 1);
             let ema = closes.slice(0, period).reduce((a,b) => a+b, 0) / period;
             const emaValues = [];
             for (let i = 0; i < klinesData.length; i++) {
-                if (i < period - 1) {
-                    emaValues.push(null);
-                } else if (i === period - 1) {
-                    emaValues.push({ time: klinesData[i].time, value: ema });
-                } else {
-                    ema = closes[i] * k + ema * (1 - k);
-                    emaValues.push({ time: klinesData[i].time, value: ema });
-                }
+                if (i < period - 1) { emaValues.push(null); }
+                else if (i === period - 1) { emaValues.push({ time: klinesData[i].time, value: ema }); }
+                else { ema = closes[i] * k + ema * (1 - k); emaValues.push({ time: klinesData[i].time, value: ema }); }
             }
             
-            // Bollinger Bands
-            const upperBand = [];
-            const lowerBand = [];
-            const markerList = [];
-            const trends = [];
+            const upperBand = [], lowerBand = [], markerList = [], trends = [];
             
             for (let i = period - 1; i < klinesData.length; i++) {
                 const slice = closes.slice(i - period + 1, i + 1);
                 const avg = slice.reduce((a,b) => a+b, 0) / slice.length;
                 const variance = slice.reduce((a,b) => a + (b-avg)*(b-avg), 0) / slice.length;
                 const stdDev = Math.sqrt(variance);
-                
                 const emaVal = emaValues[i] ? emaValues[i].value : ema;
+                
                 upperBand.push({ time: klinesData[i].time, value: emaVal + mult * stdDev });
                 lowerBand.push({ time: klinesData[i].time, value: emaVal - mult * stdDev });
                 
@@ -149,18 +145,15 @@
                 else trends.push(trends.length > 0 ? trends[trends.length-1] : 0);
             }
             
-            // Точки смены тренда
             for (let i = 1; i < trends.length; i++) {
                 if (trends[i] !== 0 && trends[i] !== trends[i-1]) {
                     const idx = i + period - 1;
                     if (idx < klinesData.length) {
                         markerList.push({
                             time: klinesData[idx].time,
-                            position: trends[i] === 1 ? 'belowBar' : 'aboveBar',
                             color: trends[i] === 1 ? '#4CAF50' : '#F44336',
-                            shape: trends[i] === 1 ? 'arrowUp' : 'arrowDown',
-                            text: trends[i] === 1 ? 'LONG' : 'SHORT',
-                            size: 3
+                            isLong: trends[i] === 1,
+                            price: trends[i] === 1 ? klinesData[idx].low * 0.995 : klinesData[idx].high * 1.005
                         });
                     }
                 }
@@ -170,10 +163,7 @@
         }
         
         function updateChart() {
-            const period = 99;
-            const mult = 9;
-            
-            const result = calculateSuperBollinger(period, mult);
+            const result = calculateSuperBollinger(99, 9);
             if (!result) return;
             
             candleSeries.setData(klinesData);
@@ -181,134 +171,80 @@
             lowerLine.setData(result.lowerBand);
             emaLine.setData(result.emaValues);
             
-            if (result.markerList.length > 0 && candleSeries.setMarkers) {
-                try { candleSeries.setMarkers(result.markerList); } catch(e) {}
+            // Удаляем старые маркеры
+            if (chart._longMarkers) { try { chart.removeSeries(chart._longMarkers); } catch(e) {} }
+            if (chart._shortMarkers) { try { chart.removeSeries(chart._shortMarkers); } catch(e) {} }
+            
+            const longPts = result.markerList.filter(m => m.isLong).map(m => ({ time: m.time, value: m.price }));
+            const shortPts = result.markerList.filter(m => !m.isLong).map(m => ({ time: m.time, value: m.price }));
+            
+            if (longPts.length > 0) {
+                chart._longMarkers = chart.addLineSeries({ color: '#00FF00', lineWidth: 0, lastValueVisible: false, pointMarkersVisible: true, pointMarkersRadius: 5 });
+                chart._longMarkers.applyOptions({ priceScaleId: 'right' });
+                chart._longMarkers.setData(longPts);
+            }
+            if (shortPts.length > 0) {
+                chart._shortMarkers = chart.addLineSeries({ color: '#FF0000', lineWidth: 0, lastValueVisible: false, pointMarkersVisible: true, pointMarkersRadius: 5 });
+                chart._shortMarkers.applyOptions({ priceScaleId: 'right' });
+                chart._shortMarkers.setData(shortPts);
             }
         }
         
         function startLiveUpdates() {
             if (liveInterval) clearInterval(liveInterval);
-            
             liveInterval = setInterval(async () => {
                 try {
                     const resp = await fetch(`https://api.bybit.com/v5/market/kline?category=linear&symbol=${currentSymbol}&interval=${currentTF}&limit=1`);
                     const data = await resp.json();
-                    if (data.retCode === 0 && data.result.list && data.result.list.length > 0) {
+                    if (data.retCode === 0 && data.result.list?.length > 0) {
                         const last = data.result.list[0];
-                        const newCandle = {
-                            time: Math.floor(parseInt(last[0]) / 1000),
-                            open: parseFloat(last[1]),
-                            high: parseFloat(last[2]),
-                            low: parseFloat(last[3]),
-                            close: parseFloat(last[4])
-                        };
-                        
-                        // Обновляем или добавляем свечу
-                        if (klinesData.length > 0 && klinesData[klinesData.length-1].time === newCandle.time) {
-                            klinesData[klinesData.length-1] = newCandle;
-                        } else {
-                            klinesData.push(newCandle);
-                            if (klinesData.length > 300) klinesData.shift();
-                        }
-                        
+                        const c = { time: Math.floor(parseInt(last[0])/1000), open: parseFloat(last[1]), high: parseFloat(last[2]), low: parseFloat(last[3]), close: parseFloat(last[4]) };
+                        if (klinesData.length > 0 && klinesData[klinesData.length-1].time === c.time) klinesData[klinesData.length-1] = c;
+                        else { klinesData.push(c); if (klinesData.length > 300) klinesData.shift(); }
                         updateChart();
                     }
                 } catch(e) {}
-            }, 3000);
+            }, 2000);
         }
         
         async function loadChart() {
             const symbol = document.getElementById('symbolSearch').value.toUpperCase();
-            if (!symbol.endsWith('USDT')) currentSymbol = symbol + 'USDT';
-            else currentSymbol = symbol;
-            
+            currentSymbol = symbol.endsWith('USDT') ? symbol : symbol + 'USDT';
             if (liveInterval) { clearInterval(liveInterval); liveInterval = null; }
-            document.getElementById('chart').innerHTML = '<div class="loading">⏳ Загрузка данных...</div>';
-            
+            document.getElementById('chart').innerHTML = '<div class="loading">⏳ Загрузка...</div>';
             try {
-                const limit = 200;
-                const url = `https://api.bybit.com/v5/market/kline?category=linear&symbol=${currentSymbol}&interval=${currentTF}&limit=${limit}`;
-                const resp = await fetch(url);
+                const resp = await fetch(`https://api.bybit.com/v5/market/kline?category=linear&symbol=${currentSymbol}&interval=${currentTF}&limit=200`);
                 const data = await resp.json();
-                
-                if (data.retCode !== 0 || !data.result.list || data.result.list.length === 0) {
-                    document.getElementById('chart').innerHTML = '<div class="error-msg">❌ Нет данных для ' + currentSymbol + '</div>';
-                    return;
-                }
-                
-                klinesData = data.result.list.reverse().map(k => ({
-                    time: Math.floor(parseInt(k[0]) / 1000),
-                    open: parseFloat(k[1]), high: parseFloat(k[2]), low: parseFloat(k[3]), close: parseFloat(k[4])
-                }));
-                
-                if (klinesData.length < 100) {
-                    document.getElementById('chart').innerHTML = '<div class="error-msg">❌ Недостаточно свечей: ' + klinesData.length + '</div>';
-                    return;
-                }
-                
-                initChart();
-                await new Promise(r => setTimeout(r, 100));
-                updateChart();
-                chart.timeScale().fitContent();
-                
-                // Запускаем live-обновление
-                startLiveUpdates();
-                
-            } catch(e) {
-                document.getElementById('chart').innerHTML = '<div class="error-msg">❌ Ошибка: ' + e.message + '</div>';
-            }
+                if (data.retCode !== 0 || !data.result.list?.length) { document.getElementById('chart').innerHTML = '<div class="error-msg">❌ Нет данных</div>'; return; }
+                klinesData = data.result.list.reverse().map(k => ({ time: Math.floor(parseInt(k[0])/1000), open: parseFloat(k[1]), high: parseFloat(k[2]), low: parseFloat(k[3]), close: parseFloat(k[4]) }));
+                if (klinesData.length < 100) { document.getElementById('chart').innerHTML = '<div class="error-msg">❌ Мало свечей</div>'; return; }
+                initChart(); await new Promise(r => setTimeout(r, 100)); updateChart(); chart.timeScale().fitContent(); startLiveUpdates();
+            } catch(e) { document.getElementById('chart').innerHTML = '<div class="error-msg">❌ ' + e.message + '</div>'; }
         }
         
-        document.querySelectorAll('.tf-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                document.querySelectorAll('.tf-btn').forEach(b => b.classList.remove('active'));
-                this.classList.add('active');
-                currentTF = this.dataset.tf;
-                loadChart();
-            });
-        });
+        document.querySelectorAll('.tf-btn').forEach(b => b.addEventListener('click', function() {
+            document.querySelectorAll('.tf-btn').forEach(x => x.classList.remove('active'));
+            this.classList.add('active'); currentTF = this.dataset.tf; loadChart();
+        }));
         
         setTimeout(loadChart, 500);
         
-        // ========== FIREBASE ==========
+        // Firebase
         firebase.initializeApp({ databaseURL: "https://bybittradingapp-d53cf-default-rtdb.firebaseio.com" });
-        const db = firebase.database();
-        const uid = 'zkidz';
-        const path = 'strategies/strategy_6/users/' + uid;
-        
-        db.ref(path + '/current').on('value', s => {
-            const d = s.val();
-            if (d) {
-                document.getElementById('balance').innerText = (d.balance||1000).toFixed(2);
-                document.getElementById('floating').innerText = (d.floating_pnl>=0?'+':'')+(d.floating_pnl||0).toFixed(2);
-            }
-        });
-        db.ref(path + '/stats').on('value', s => {
-            const d = s.val();
-            if (d) {
-                document.getElementById('winrate').innerText = (d.win_rate||0).toFixed(1)+'%';
-                document.getElementById('total').innerText = d.total||0;
-            }
-        });
+        const db = firebase.database(), uid = 'zkidz', path = 'strategies/strategy_6/users/' + uid;
+        db.ref(path + '/current').on('value', s => { const d = s.val(); if (d) { document.getElementById('balance').innerText = (d.balance||1000).toFixed(2); document.getElementById('floating').innerText = (d.floating_pnl>=0?'+':'')+(d.floating_pnl||0).toFixed(2); } });
+        db.ref(path + '/stats').on('value', s => { const d = s.val(); if (d) { document.getElementById('winrate').innerText = (d.win_rate||0).toFixed(1)+'%'; document.getElementById('total').innerText = d.total||0; } });
         db.ref(path + '/open_positions').on('value', s => {
-            const d = s.val();
-            const e = document.getElementById('positions');
+            const d = s.val(), e = document.getElementById('positions');
             if (!d) { e.innerHTML = '<p style="color:#666">Нет позиций</p>'; document.getElementById('posCount').innerText = '0'; return; }
-            const arr = Object.values(d);
-            document.getElementById('posCount').innerText = arr.length;
-            e.innerHTML = arr.map(p => {
-                const pnl = p.side==='BUY' ? (p.current_price-p.entry)*p.quantity : (p.entry-p.current_price)*p.quantity;
-                const pf = p.side==='BUY' ? ((p.current_price-p.entry)/p.entry*100) : ((p.entry-p.current_price)/p.entry*100);
-                return `<div class="pos ${p.side}"><div class="pos-header"><span class="pos-symbol">${p.symbol} <span class="pos-side ${p.side}">${p.side==='BUY'?'LONG':'SHORT'}</span>${p.trailing_activated?' <span class="trail-badge">🛡️ ТРЕЙЛИНГ</span>':''}</span><span class="${pnl>=0?'green':'red'}">${pnl>=0?'+':''}$${pnl.toFixed(4)} (${pf>=0?'+':''}${pf.toFixed(2)}%)</span></div><div class="pos-info"><div>Вход: $${p.entry?.toFixed(4)}</div><div>Стоп: $${p.stop?.toFixed(4)}</div><div>Объём: $${p.position_usdt?.toFixed(2)}</div><div>Время: ${p.open_time_str||'—'}</div></div></div>`;
-            }).join('');
+            const arr = Object.values(d); document.getElementById('posCount').innerText = arr.length;
+            e.innerHTML = arr.map(p => { const pnl = p.side==='BUY'?(p.current_price-p.entry)*p.quantity:(p.entry-p.current_price)*p.quantity; const pf = p.side==='BUY'?((p.current_price-p.entry)/p.entry*100):((p.entry-p.current_price)/p.entry*100); return `<div class="pos ${p.side}"><div class="pos-header"><span class="pos-symbol">${p.symbol} <span class="pos-side ${p.side}">${p.side==='BUY'?'LONG':'SHORT'}</span>${p.trailing_activated?' <span class="trail-badge">🛡️ ТРЕЙЛИНГ</span>':''}</span><span class="${pnl>=0?'green':'red'}">${pnl>=0?'+':''}$${pnl.toFixed(4)} (${pf>=0?'+':''}${pf.toFixed(2)}%)</span></div><div class="pos-info"><div>Вход: $${p.entry?.toFixed(4)}</div><div>Стоп: $${p.stop?.toFixed(4)}</div><div>Объём: $${p.position_usdt?.toFixed(2)}</div><div>Время: ${p.open_time_str||'—'}</div></div></div>`; }).join('');
         });
         db.ref(path + '/trades').on('value', s => {
-            const d = s.val();
-            const e = document.getElementById('trades');
+            const d = s.val(), e = document.getElementById('trades');
             if (!d) { e.innerHTML = '<p style="color:#666">Нет сделок</p>'; document.getElementById('tradeCount').innerText = '0'; return; }
-            const arr = Object.values(d).reverse();
-            document.getElementById('tradeCount').innerText = arr.length;
-            e.innerHTML = arr.map(t => `<div class="trade"><div class="trade-header"><span><b>${t.symbol}</b> ${t.side} | ${t.reason||''}</span><span class="profit-badge ${t.profit>=0?'win':'loss'}">${t.profit>=0?'+':''}$${t.profit?.toFixed(4)}</span></div><div style="font-size:12px; color:#666; margin-top:6px;">Вход: $${t.entry?.toFixed(4)} → Выход: $${t.exit?.toFixed(4)} | ${t.profit_percent>=0?'+':''}${t.profit_percent?.toFixed(2)}% | ${t.open_time_str||''}</div></div>`).join('');
+            const arr = Object.values(d).reverse(); document.getElementById('tradeCount').innerText = arr.length;
+            e.innerHTML = arr.map(t => `<div class="trade"><div class="trade-header"><span><b>${t.symbol}</b> ${t.side} | ${t.reason||''}</span><span class="profit-badge ${t.profit>=0?'win':'loss'}">${t.profit>=0?'+':''}$${t.profit?.toFixed(4)}</span></div><div style="font-size:12px;color:#666;margin-top:6px;">Вход: $${t.entry?.toFixed(4)} → Выход: $${t.exit?.toFixed(4)} | ${t.profit_percent>=0?'+':''}${t.profit_percent?.toFixed(2)}% | ${t.open_time_str||''}</div></div>`).join('');
         });
     </script>
 </body>
