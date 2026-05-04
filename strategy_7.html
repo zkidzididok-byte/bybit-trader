@@ -39,7 +39,7 @@
     <a href="index.html" class="back">← Назад</a>
     <div class="header">
         <h1>🔗 Стратегия 7 — USDC/USDT Pair Trading</h1>
-        <p>Парный трейдинг | 70+ USDC пар | Всегда в рынке | Перезаход при закрытии | Трейлинг +1.5%→+1.25%...</p>
+        <p>Парный трейдинг | 70 USDC PERP | Всегда в рынке | Перезаход при закрытии | Трейлинг +1.5%→+1.25%...</p>
     </div>
     
     <div class="stats">
@@ -81,8 +81,9 @@
             e.innerHTML = arr.map(p => {
                 const pnl = p.side==='BUY' ? (p.current_price-p.entry)*p.quantity : (p.entry-p.current_price)*p.quantity;
                 const pf = p.side==='BUY' ? ((p.current_price-p.entry)/p.entry*100) : ((p.entry-p.current_price)/p.entry*100);
-                const isPair = p.symbol.endsWith('USDC');
-                return `<div class="pos ${p.side}"><div class="pos-header"><span class="pos-symbol">${p.symbol} <span class="pos-side ${p.side}">${p.side==='BUY'?'LONG':'SHORT'}</span>${isPair?' <span class="pair-badge">PAIR</span>':''}${p.trailing_activated?' <span class="trail-badge">🛡️ ТРЕЙЛИНГ</span>':''}</span><span class="${pnl>=0?'green':'red'}">${pnl>=0?'+':''}$${pnl.toFixed(4)} (${pf>=0?'+':''}${pf.toFixed(2)}%)</span></div><div class="pos-info"><div>Вход: $${p.entry?.toFixed(4)}</div><div>Стоп: $${p.stop?.toFixed(4)}</div><div>Объём: $${p.position_usdt?.toFixed(2)}</div><div>Время: ${p.open_time_str||'—'}</div></div></div>`;
+                const displaySymbol = p.symbol.replace('PERP', 'USDC');
+                const isPerp = p.symbol.includes('PERP');
+                return `<div class="pos ${p.side}"><div class="pos-header"><span class="pos-symbol">${displaySymbol} <span class="pos-side ${p.side}">${p.side==='BUY'?'LONG':'SHORT'}</span>${isPerp?' <span class="pair-badge">USDC</span>':''}${p.trailing_activated?' <span class="trail-badge">🛡️ ТРЕЙЛИНГ</span>':''}</span><span class="${pnl>=0?'green':'red'}">${pnl>=0?'+':''}$${pnl.toFixed(4)} (${pf>=0?'+':''}${pf.toFixed(2)}%)</span></div><div class="pos-info"><div>Вход: $${p.entry?.toFixed(4)}</div><div>Стоп: $${p.stop?.toFixed(4)}</div><div>Объём: $${p.position_usdt?.toFixed(2)}</div><div>Время: ${p.open_time_str||'—'}</div></div></div>`;
             }).join('');
         });
         db.ref(path + '/trades').on('value', s => {
@@ -91,7 +92,10 @@
             if (!d) { e.innerHTML = '<p style="color:#666">Нет сделок</p>'; document.getElementById('tradeCount').innerText = '0'; return; }
             const arr = Object.values(d).reverse();
             document.getElementById('tradeCount').innerText = arr.length;
-            e.innerHTML = arr.map(t => `<div class="trade"><div class="trade-header"><span><b>${t.symbol}</b> ${t.side} | ${t.reason||''}</span><span class="profit-badge ${t.profit>=0?'win':'loss'}">${t.profit>=0?'+':''}$${t.profit?.toFixed(4)}</span></div><div style="font-size:12px;color:#666;margin-top:6px;">Вход: $${t.entry?.toFixed(4)} → Выход: $${t.exit?.toFixed(4)} | ${t.profit_percent>=0?'+':''}${t.profit_percent?.toFixed(2)}% | ${t.open_time_str||''}</div></div>`).join('');
+            e.innerHTML = arr.map(t => {
+                const displaySymbol = t.symbol.replace('PERP', 'USDC');
+                return `<div class="trade"><div class="trade-header"><span><b>${displaySymbol}</b> ${t.side} | ${t.reason||''}</span><span class="profit-badge ${t.profit>=0?'win':'loss'}">${t.profit>=0?'+':''}$${t.profit?.toFixed(4)}</span></div><div style="font-size:12px;color:#666;margin-top:6px;">Вход: $${t.entry?.toFixed(4)} → Выход: $${t.exit?.toFixed(4)} | ${t.profit_percent>=0?'+':''}${t.profit_percent?.toFixed(2)}% | ${t.open_time_str||''}</div></div>`;
+            }).join('');
         });
     </script>
 </body>
