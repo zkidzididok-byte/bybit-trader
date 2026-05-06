@@ -3,120 +3,84 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Стратегия 7 — USDC/USDT Pair Trading</title>
+    <title>Стратегия 7 — USDC/USDT</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { background: #0a0a0f; color: #fff; font-family: Arial; padding: 20px; }
-        .header { background: linear-gradient(135deg, #667eea 0%, #f093fb 100%); padding: 20px; border-radius: 16px; margin-bottom: 20px; }
-        .header h1 { font-size: 20px; }
-        .header p { color: #ddd; font-size: 13px; margin-top: 6px; }
-        .stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 20px; }
-        .stat { background: #13131a; border-radius: 14px; padding: 16px; text-align: center; border: 1px solid #222; }
-        .stat-val { font-size: 22px; font-weight: bold; }
-        .stat-lbl { font-size: 11px; color: #666; margin-top: 4px; }
-        .green { color: #4CAF50; } .red { color: #F44336; } .gold { color: #FFD700; }
-        .card { background: #13131a; border-radius: 16px; padding: 20px; margin-bottom: 16px; border: 1px solid #222; }
-        .card h3 { margin-bottom: 12px; color: #888; }
-        .pos { background: #1a1a24; border-radius: 12px; padding: 14px; margin: 8px 0; border-left: 4px solid #4CAF50; }
-        .pos.SELL { border-left-color: #F44336; }
-        .pos-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
-        .pos-symbol { font-size: 16px; font-weight: bold; }
-        .pos-side { padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
-        .pos-side.BUY { background: #4CAF5022; color: #4CAF50; } .pos-side.SELL { background: #F4433622; color: #F44336; }
-        .pos-info { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 10px; font-size: 13px; color: #888; }
-        .trail-badge { background: #667eea22; color: #667eea; padding: 2px 8px; border-radius: 8px; font-size: 11px; }
-        .pair-badge { background: #f093fb22; color: #f093fb; padding: 2px 8px; border-radius: 8px; font-size: 11px; }
-        .trade { background: #1a1a24; border-radius: 12px; padding: 12px; margin: 6px 0; }
-        .trade-header { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 6px; }
-        .profit-badge { padding: 4px 10px; border-radius: 20px; font-weight: bold; font-size: 14px; }
-        .profit-badge.win { background: #4CAF5022; color: #4CAF50; } .profit-badge.loss { background: #F4433622; color: #F44336; }
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{background:#0a0a0f;color:#fff;font-family:Arial;padding:20px}
+        .header{background:linear-gradient(135deg,#667eea,#f093fb);padding:20px;border-radius:16px;margin-bottom:20px;text-align:center}
+        .header h1{font-size:20px}
+        .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px}
+        .stat{background:#13131a;border-radius:14px;padding:16px;text-align:center}
+        .val{font-size:22px;font-weight:bold;color:#4CAF50}
+        .lbl{font-size:11px;color:#666;margin-top:4px}
+        .card{background:#13131a;border-radius:16px;padding:20px;margin-bottom:16px}
+        .card h3{color:#888;margin-bottom:12px}
+        .pos{background:#1a1a24;border-radius:12px;padding:14px;margin:8px 0;border-left:4px solid #4CAF50}
+        .pos.SELL{border-left-color:#F44336}
+        .green{color:#4CAF50}.red{color:#F44336}
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>🔗 Стратегия 7 — USDC/USDT Pair Trading</h1>
-        <p>Парный трейдинг | 70 USDC PERP | Всегда в рынке</p>
-    </div>
-    
+    <div class="header"><h1>Стратегия 7 — USDC/USDT</h1></div>
     <div class="stats">
-        <div class="stat"><div class="stat-val green" id="balance">1000</div><div class="stat-lbl">💰 Баланс $</div></div>
-        <div class="stat"><div class="stat-val" id="floating">0.00</div><div class="stat-lbl">📈 Плавающий PnL</div></div>
-        <div class="stat"><div class="stat-val" id="profit">0.00</div><div class="stat-lbl">💵 Реализованный PnL</div></div>
-        <div class="stat"><div class="stat-val gold" id="winrate">0%</div><div class="stat-lbl">🎯 Win Rate</div></div>
-        <div class="stat"><div class="stat-val" id="total" style="color:#f093fb;">0</div><div class="stat-lbl">📊 Сделок</div></div>
+        <div class="stat"><div class="val" id="balance">—</div><div class="lbl">Баланс</div></div>
+        <div class="stat"><div class="val" id="pnl">—</div><div class="lbl">Плавающий PnL</div></div>
+        <div class="stat"><div class="val" id="total">—</div><div class="lbl">Сделок</div></div>
     </div>
-    
-    <div class="card"><h3>📌 Открытые позиции (<span id="posCount">0</span>)</h3><div id="positions">Нет позиций</div></div>
-    <div class="card"><h3>📋 История сделок (<span id="tradeCount">0</span>)</h3><div id="trades">Нет сделок</div></div>
+    <div class="card"><h3>Открытые позиции</h3><div id="positions">Загрузка...</div></div>
+    <div class="card"><h3>История сделок</h3><div id="trades">Загрузка...</div></div>
 
-    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
     <script>
-        firebase.initializeApp({ databaseURL: "https://bybittradingapp-d53cf-default-rtdb.firebaseio.com" });
-        const db = firebase.database();
+        const BASE = "https://bybittradingapp-d53cf-default-rtdb.firebaseio.com";
         const uid = 'zkidz';
-        const path = 'strategies/strategy_7/users/' + uid;
+        const path = `strategies/strategy_7/users/${uid}`;
         
-        db.ref(path + '/current').on('value', s => {
-            const d = s.val() || {};
-            document.getElementById('balance').innerText = (d.balance||1000).toFixed(2);
-            document.getElementById('floating').innerText = (d.floating_pnl||0).toFixed(4);
-            document.getElementById('profit').innerText = (d.profit||0).toFixed(2);
-        });
+        async function fetchFB(endpoint) {
+            try {
+                const r = await fetch(`${BASE}/${path}/${endpoint}.json`);
+                return await r.json();
+            } catch(e) { return null; }
+        }
         
-        db.ref(path + '/stats').on('value', s => {
-            const d = s.val() || {};
-            document.getElementById('winrate').innerText = (d.win_rate||0).toFixed(1)+'%';
-            document.getElementById('total').innerText = d.total||0;
-        });
+        async function update() {
+            const current = await fetchFB('current');
+            if (current) {
+                document.getElementById('balance').innerText = '$' + (current.balance||1000).toFixed(2);
+                const pnl = current.floating_pnl || 0;
+                document.getElementById('pnl').innerText = (pnl>=0?'+':'') + '$' + pnl.toFixed(4);
+            }
+            
+            const stats = await fetchFB('stats');
+            if (stats) document.getElementById('total').innerText = stats.total||0;
+            
+            const positions = await fetchFB('open_positions');
+            const pe = document.getElementById('positions');
+            if (!positions || Object.keys(positions).length===0) {
+                pe.innerHTML = 'Нет позиций';
+            } else {
+                pe.innerHTML = Object.values(positions).map(p => {
+                    const entry=p.entry||0, current=p.current_price||entry, qty=p.quantity||0;
+                    const side=p.side||'BUY';
+                    const pnl=side==='BUY'?(current-entry)*qty:(entry-current)*qty;
+                    const sym=(p.symbol||'').replace('PERP','USDC');
+                    return `<div class="pos ${side}"><b>${sym}</b> ${side} | PnL: <span class="${pnl>=0?'green':'red'}">${pnl>=0?'+':''}$${pnl.toFixed(4)}</span> | Вход: $${entry.toFixed(4)} | Тек: $${current.toFixed(4)}</div>`;
+                }).join('');
+            }
+            
+            const trades = await fetchFB('trades');
+            const te = document.getElementById('trades');
+            if (!trades || Object.keys(trades).length===0) {
+                te.innerHTML = 'Нет сделок';
+            } else {
+                te.innerHTML = Object.values(trades).reverse().slice(0,30).map(t => {
+                    const sym=(t.symbol||'').replace('PERP','USDC');
+                    return `<div class="pos"><b>${sym}</b> ${t.side||''} | PnL: <span class="${t.profit>=0?'green':'red'}">${t.profit>=0?'+':''}$${(t.profit||0).toFixed(4)}</span> | ${t.open_time_str||''}</div>`;
+                }).join('');
+            }
+        }
         
-        db.ref(path + '/open_positions').on('value', s => {
-            const d = s.val();
-            const e = document.getElementById('positions');
-            if (!d) { e.innerHTML='<p style="color:#666">Нет позиций</p>'; return; }
-            const arr = Object.values(d);
-            document.getElementById('posCount').innerText = arr.length;
-            e.innerHTML = arr.map(p => {
-                const entry = p.entry||0, current = p.current_price||entry, qty = p.quantity||0;
-                const side = p.side||'BUY';
-                const pnl = side==='BUY' ? (current-entry)*qty : (entry-current)*qty;
-                const pf = entry>0 ? (pnl/(entry*qty)*100) : 0;
-                const sym = p.symbol||'?';
-                const isPerp = sym.includes('PERP');
-                return '<div class="pos '+side+'">'+
-                    '<div class="pos-header">'+
-                        '<span class="pos-symbol">'+sym.replace('PERP','USDC')+' <span class="pos-side '+side+'">'+(side==='BUY'?'LONG':'SHORT')+'</span>'+
-                        (isPerp?' <span class="pair-badge">USDC</span>':'')+
-                        (p.trailing_activated?' <span class="trail-badge">ТРЕЙЛИНГ</span>':'')+
-                        '</span>'+
-                        '<span class="'+(pnl>=0?'green':'red')+'">'+(pnl>=0?'+':'')+'$'+pnl.toFixed(4)+' ('+(pf>=0?'+':'')+pf.toFixed(2)+'%)</span>'+
-                    '</div>'+
-                    '<div class="pos-info">'+
-                        '<div>Вход: $'+entry.toFixed(4)+'</div><div>Стоп: $'+(p.stop||0).toFixed(4)+'</div>'+
-                        '<div>Объём: $'+(p.position_usdt||0).toFixed(2)+'</div><div>'+ (p.open_time_str||'')+'</div>'+
-                    '</div>'+
-                '</div>';
-            }).join('');
-        });
-        
-        db.ref(path + '/trades').on('value', s => {
-            const d = s.val();
-            const e = document.getElementById('trades');
-            if (!d) { e.innerHTML='<p style="color:#666">Нет сделок</p>'; return; }
-            const arr = Object.values(d).reverse();
-            document.getElementById('tradeCount').innerText = arr.length;
-            e.innerHTML = arr.map(t => 
-                '<div class="trade">'+
-                    '<div class="trade-header">'+
-                        '<span><b>'+(t.symbol||'?').replace('PERP','USDC')+'</b> '+(t.side||'')+' | '+(t.reason||'')+'</span>'+
-                        '<span class="profit-badge '+(t.profit>=0?'win':'loss')+'">'+(t.profit>=0?'+':'')+'$'+(t.profit||0).toFixed(4)+'</span>'+
-                    '</div>'+
-                    '<div style="font-size:12px;color:#666;margin-top:6px;">'+
-                        'Вход: $'+(t.entry||0).toFixed(4)+' → Выход: $'+(t.exit||0).toFixed(4)+' | '+(t.profit_percent||0)+'% | '+(t.open_time_str||'')+
-                    '</div>'+
-                '</div>'
-            ).join('');
-        });
+        update();
+        setInterval(update, 2000);
     </script>
 </body>
 </html>
