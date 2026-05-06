@@ -11,7 +11,7 @@
         .header { background: linear-gradient(135deg, #667eea 0%, #f093fb 100%); padding: 20px; border-radius: 16px; margin-bottom: 20px; }
         .header h1 { font-size: 20px; }
         .header p { color: #ddd; font-size: 13px; margin-top: 6px; }
-        .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
+        .stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 20px; }
         .stat { background: #13131a; border-radius: 14px; padding: 16px; text-align: center; border: 1px solid #222; }
         .stat-val { font-size: 22px; font-weight: bold; }
         .stat-lbl { font-size: 11px; color: #666; margin-top: 4px; }
@@ -45,6 +45,7 @@
     <div class="stats">
         <div class="stat"><div class="stat-val green" id="balance">1000</div><div class="stat-lbl">💰 Баланс $</div></div>
         <div class="stat"><div class="stat-val" id="floating">0.00</div><div class="stat-lbl">📈 Плавающий PnL</div></div>
+        <div class="stat"><div class="stat-val" id="profit">0.00</div><div class="stat-lbl">💵 Реализованный PnL</div></div>
         <div class="stat"><div class="stat-val gold" id="winrate">0%</div><div class="stat-lbl">🎯 Win Rate</div></div>
         <div class="stat"><div class="stat-val" id="total" style="color:#f093fb;">0</div><div class="stat-lbl">📊 Сделок</div></div>
     </div>
@@ -63,6 +64,7 @@
             if (d) {
                 document.getElementById('balance').innerText = (d.balance||1000).toFixed(2);
                 document.getElementById('floating').innerText = (d.floating_pnl>=0?'+':'')+(d.floating_pnl||0).toFixed(2);
+                document.getElementById('profit').innerText = (d.profit>=0?'+':'')+(d.profit||0).toFixed(2);
             }
         });
         db.ref(path + '/stats').on('value', s => {
@@ -70,6 +72,7 @@
             if (d) {
                 document.getElementById('winrate').innerText = (d.win_rate||0).toFixed(1)+'%';
                 document.getElementById('total').innerText = d.total||0;
+                document.getElementById('profit').innerText = (d.total_profit>=0?'+':'')+(d.total_profit||0).toFixed(2);
             }
         });
         db.ref(path + '/open_positions').on('value', s => {
