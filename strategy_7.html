@@ -24,7 +24,7 @@
         .pos-symbol { font-size: 16px; font-weight: bold; }
         .pos-side { padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
         .pos-side.BUY { background: #4CAF5022; color: #4CAF50; } .pos-side.SELL { background: #F4433622; color: #F44336; }
-        .pos-info { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 10px; font-size: 13px; color: #888; }
+        .pos-info { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; font-size: 13px; color: #888; }
         .trail-badge { background: #667eea22; color: #667eea; padding: 2px 8px; border-radius: 8px; font-size: 11px; }
         .pair-badge { background: #f093fb22; color: #f093fb; padding: 2px 8px; border-radius: 8px; font-size: 11px; }
         .trade { background: #1a1a24; border-radius: 12px; padding: 12px; margin: 6px 0; }
@@ -59,8 +59,12 @@
         const uid = 'zkidz';
         const path = 'strategies/strategy_7/users/' + uid;
         
+        console.log('🔥 Стратегия 7 — запуск мониторинга');
+        console.log('Путь:', path);
+        
         db.ref(path + '/current').on('value', s => {
             const d = s.val();
+            console.log('📊 current:', JSON.stringify(d));
             if (d) {
                 document.getElementById('balance').innerText = (d.balance||1000).toFixed(2);
                 document.getElementById('floating').innerText = (d.floating_pnl>=0?'+':'')+(d.floating_pnl||0).toFixed(2);
@@ -69,6 +73,7 @@
         });
         db.ref(path + '/stats').on('value', s => {
             const d = s.val();
+            console.log('📊 stats:', JSON.stringify(d));
             if (d) {
                 document.getElementById('winrate').innerText = (d.win_rate||0).toFixed(1)+'%';
                 document.getElementById('total').innerText = d.total||0;
@@ -78,6 +83,8 @@
         db.ref(path + '/open_positions').on('value', s => {
             const d = s.val();
             const e = document.getElementById('positions');
+            console.log('📊 open_positions (keys):', d ? Object.keys(d).length : 0);
+            
             if (!d) { 
                 e.innerHTML = '<p style="color:#666">Нет позиций</p>'; 
                 document.getElementById('posCount').innerText = '0'; 
@@ -85,14 +92,36 @@
             }
             const arr = Object.values(d);
             document.getElementById('posCount').innerText = arr.length;
-            e.innerHTML = arr.map(p => {
+            
+            // Отладка первой позиции
+            if (arr.length > 0) {
+                const raw = arr[0];
+                console.log('🔍 RAW Первая позиция:');
+                console.log('  symbol:', raw.symbol);
+                console.log('  entry:', raw.entry, typeof raw.entry);
+                console.log('  current_price:', raw.current_price, typeof raw.current_price);
+                console.log('  quantity:', raw.quantity, typeof raw.quantity);
+                console.log('  side:', raw.side);
+                console.log('  ПОЛНЫЙ ОБЪЕКТ:', JSON.stringify(raw));
+            }
+            
+            e.innerHTML = arr.map((p, i) => {
                 if (!p || !p.entry) return '';
                 const entry = parseFloat(p.entry) || 0;
                 const current = parseFloat(p.current_price) || entry;
                 const qty = parseFloat(p.quantity) || 0;
                 const side = p.side || 'BUY';
                 const pnl = side === 'BUY' ? (current - entry) * qty : (entry - current) * qty;
-                const pf = entry > 0 ? (pnl / (entry * qty) * 100) : 0;
+                const pf = entry > 0 && qty > 0 ? (pnl / (entry * qty) * 100) : 0;
+                
+                // Отладка первой позиции
+                if (i === 0) {
+                    console.log('💰 PnL расчёт:');
+                    console.log('  entry:', entry, 'current:', current, 'qty:', qty);
+                    console.log('  формула:', side === 'BUY' ? '(current-entry)*qty' : '(entry-current)*qty');
+                    console.log('  pnl:', pnl, 'pf:', pf + '%');
+                }
+                
                 const displaySymbol = (p.symbol || 'PERP').replace('PERP', 'USDC');
                 const isPerp = (p.symbol || '').includes('PERP');
                 return '<div class="pos ' + side + '">' +
@@ -106,8 +135,10 @@
                     '</div>' +
                     '<div class="pos-info">' +
                         '<div>Вход: $' + entry.toFixed(4) + '</div>' +
+                        '<div>Тек: $' + current.toFixed(4) + '</div>' +
                         '<div>Стоп: $' + (parseFloat(p.stop)||0).toFixed(4) + '</div>' +
                         '<div>Объём: $' + (parseFloat(p.position_usdt)||0).toFixed(2) + '</div>' +
+                        '<div>Кол-во: ' + qty.toFixed(6) + '</div>' +
                         '<div>Время: ' + (p.open_time_str||'—') + '</div>' +
                     '</div>' +
                 '</div>';
@@ -138,6 +169,8 @@
                 '</div>';
             }).join('');
         });
+        
+        console.log('✅ Мониторинг Firebase запущен');
     </script>
 </body>
 </html>
