@@ -3,107 +3,201 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>S7 — USDC/USDT</title>
+    <title>Стратегия 7 — USDC/USDT Pair Trading</title>
     <style>
-        *{margin:0;padding:0;box-sizing:border-box}
-        body{background:#0a0a0f;color:#fff;font-family:segoe ui,arial,sans-serif;padding:10px}
-        .h{background:linear-gradient(135deg,#667eea,#f093fb);padding:12px;border-radius:12px;margin-bottom:10px;text-align:center;font-size:14px}
-        .s{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:10px}
-        .b{background:#13131a;border-radius:10px;padding:10px;text-align:center}
-        .v{font-size:18px;font-weight:700}.l{font-size:9px;color:#666}
-        .g{color:#4CAF50}.r{color:#F44336}.y{color:#FFD700}
-        .c{background:#13131a;border-radius:12px;padding:12px;margin-bottom:8px}
-        .c h3{color:#888;font-size:12px;margin-bottom:8px}
-        .p{background:#1a1a24;border-radius:8px;padding:8px;margin:4px 0;border-left:3px solid #4CAF50;font-size:11px}
-        .p.SELL{border-left-color:#F44336}
-        .ph{display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px}
-        .ps{font-weight:700}.pi{color:#888;font-size:10px}
-        .t{background:#1a1a24;border-radius:8px;padding:8px;margin:4px 0;font-size:11px}
-        .th{display:flex;justify-content:space-between}
-        .pb{padding:2px 8px;border-radius:10px;font-weight:700;font-size:11px}
-        .pb.w{background:#4CAF5022;color:#4CAF50}.pb.loss{background:#F4433622;color:#F44336}
-        .reason{font-size:9px;color:#888;margin-left:4px}
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #0a0a0f; color: #fff; font-family: 'Segoe UI', Arial, sans-serif; padding: 20px; }
+        .header { background: linear-gradient(135deg, #667eea 0%, #f093fb 100%); padding: 24px; border-radius: 16px; margin-bottom: 20px; text-align: center; }
+        .header h1 { font-size: 24px; font-weight: 700; }
+        .header p { color: rgba(255,255,255,0.8); font-size: 13px; margin-top: 6px; }
+        .stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 20px; }
+        .stat { background: #13131a; border-radius: 14px; padding: 18px; text-align: center; border: 1px solid #222; }
+        .stat-val { font-size: 24px; font-weight: 700; }
+        .stat-lbl { font-size: 11px; color: #666; margin-top: 4px; text-transform: uppercase; letter-spacing: 1px; }
+        .green { color: #4CAF50; } .red { color: #F44336; } .gold { color: #FFD700; } .purple { color: #f093fb; }
+        .card { background: #13131a; border-radius: 16px; padding: 20px; margin-bottom: 16px; border: 1px solid #222; }
+        .card h3 { margin-bottom: 16px; color: #888; font-size: 14px; text-transform: uppercase; letter-spacing: 2px; }
+        .pos { background: #1a1a24; border-radius: 12px; padding: 16px; margin: 8px 0; border-left: 4px solid #4CAF50; transition: all 0.2s; }
+        .pos.SELL { border-left-color: #F44336; }
+        .pos:hover { background: #1e1e2a; }
+        .pos-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+        .pos-symbol { font-size: 16px; font-weight: 700; }
+        .pos-side { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
+        .pos-side.BUY { background: #4CAF5022; color: #4CAF50; } 
+        .pos-side.SELL { background: #F4433622; color: #F44336; }
+        .pos-pnl { font-size: 18px; font-weight: 700; }
+        .pos-info { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; font-size: 12px; color: #888; }
+        .pos-info span { color: #aaa; font-weight: 500; }
+        .badge { padding: 3px 8px; border-radius: 8px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
+        .badge-trailing { background: #667eea22; color: #667eea; }
+        .badge-usdc { background: #f093fb22; color: #f093fb; }
+        .badge-funding { background: #FFD70022; color: #FFD700; }
+        .trade { background: #1a1a24; border-radius: 12px; padding: 14px; margin: 6px 0; border: 1px solid #222; }
+        .trade:hover { background: #1e1e2a; }
+        .trade-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+        .trade-symbol { font-weight: 700; }
+        .trade-side { font-size: 11px; color: #888; }
+        .profit-badge { padding: 5px 12px; border-radius: 20px; font-weight: 700; font-size: 14px; }
+        .profit-badge.win { background: #4CAF5022; color: #4CAF50; } 
+        .profit-badge.loss { background: #F4433622; color: #F44336; }
+        .trade-details { font-size: 11px; color: #666; margin-top: 8px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+        .trade-reason { font-size: 10px; padding: 1px 6px; border-radius: 4px; }
+        .trade-reason.take { background: #4CAF5022; color: #4CAF50; }
+        .trade-reason.stop { background: #F4433622; color: #F44336; }
+        @media (max-width: 768px) {
+            .stats { grid-template-columns: repeat(3, 1fr); }
+            .pos-info { grid-template-columns: repeat(2, 1fr); }
+            .trade-details { grid-template-columns: repeat(2, 1fr); }
+        }
     </style>
 </head>
 <body>
-    <div class="h">S7 | USDC/USDT | Стоп 2% | Тейк 0.5%</div>
-    <div class="s">
-        <div class="b"><div class="v g" id="bal">—</div><div class="l">Баланс</div></div>
-        <div class="b"><div class="v" id="fl">—</div><div class="l">Плав PnL</div></div>
-        <div class="b"><div class="v y" id="fp">—</div><div class="l">Закр PnL</div></div>
-        <div class="b"><div class="v" id="tm">—</div><div class="l">Фандинг</div></div>
-        <div class="b"><div class="v" id="tot">—</div><div class="l">Сделок</div></div>
+    <div class="header">
+        <h1>🔗 Стратегия 7 — USDC/USDT Pair Trading</h1>
+        <p>69 пар | Всегда в рынке | Стоп 2% | Тейк 0.5% | Комиссия 0.11%</p>
     </div>
-    <div class="c"><h3>Позиции (<span id="pc">0</span>)</h3><div id="pos"></div></div>
-    <div class="c"><h3>Все сделки (<span id="tc">0</span>)</h3><div id="trd"></div></div>
+    
+    <div class="stats">
+        <div class="stat"><div class="stat-val green" id="balance">1000</div><div class="stat-lbl">💰 Баланс</div></div>
+        <div class="stat"><div class="stat-val" id="floating">0.0000</div><div class="stat-lbl">📈 Плавающий PnL</div></div>
+        <div class="stat"><div class="stat-val gold" id="funding">0.0000</div><div class="stat-lbl">💸 Реализованный PnL</div></div>
+        <div class="stat"><div class="stat-val purple" id="timer">00:00:00</div><div class="stat-lbl">⏱️ До фандинга</div></div>
+        <div class="stat"><div class="stat-val" id="total" style="color:#f093fb;">0</div><div class="stat-lbl">📊 Сделок</div></div>
+    </div>
+    
+    <div class="card">
+        <h3>📌 Открытые позиции (<span id="posCount">0</span>)</h3>
+        <div id="positions">Загрузка...</div>
+    </div>
+    
+    <div class="card">
+        <h3>📋 Все сделки (<span id="tradeCount">0</span>)</h3>
+        <div id="trades">Загрузка...</div>
+    </div>
 
     <script>
-        const B = 'https://bybittradingapp-d53cf-default-rtdb.firebaseio.com/strategies/strategy_7/users/zkidz';
+        const BASE = "https://bybittradingapp-d53cf-default-rtdb.firebaseio.com";
+        const uid = 'zkidz';
+        const path = `strategies/strategy_7/users/${uid}`;
+        
+        async function fetchFB(endpoint) {
+            try {
+                const r = await fetch(`${BASE}/${path}/${endpoint}.json`);
+                return await r.json();
+            } catch(e) { return null; }
+        }
+        
+        function fmtTime(seconds) {
+            const h = Math.floor(seconds / 3600);
+            const m = Math.floor((seconds % 3600) / 60);
+            const s = seconds % 60;
+            return `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+        }
         
         async function update() {
-            try {
-                const r = await fetch(`${B}/current.json`);
-                const d = await r.json();
-                if (d) {
-                    document.getElementById('bal').innerText = '$' + (d.balance || 1000).toFixed(2);
-                    const pnl = d.floating_pnl || 0;
-                    const fe = document.getElementById('fl');
-                    fe.innerText = (pnl >= 0 ? '+' : '') + '$' + pnl.toFixed(2);
-                    fe.className = 'v ' + (pnl >= 0 ? 'g' : 'r');
-                    const profit = d.profit || 0;
-                    const pe = document.getElementById('fp');
-                    pe.innerText = (profit >= 0 ? '+' : '') + '$' + profit.toFixed(2);
-                    pe.className = 'v ' + (profit >= 0 ? 'g' : 'r');
-                    document.getElementById('tm').innerText = new Date((d.funding_timer || 0) * 1000).toISOString().substr(11, 8);
-                }
+            const current = await fetchFB('current');
+            if (current) {
+                document.getElementById('balance').innerHTML = '$' + (current.balance || 1000).toFixed(2);
+                const pnl = current.floating_pnl || 0;
+                const pnlEl = document.getElementById('floating');
+                pnlEl.innerHTML = (pnl >= 0 ? '+' : '') + '$' + pnl.toFixed(4);
+                pnlEl.className = 'stat-val ' + (pnl >= 0 ? 'green' : 'red');
                 
-                const s = await fetch(`${B}/stats.json`);
-                const st = await s.json();
-                if (st) document.getElementById('tot').innerText = st.total || 0;
+                const profit = current.profit || 0;
+                const fundEl = document.getElementById('funding');
+                fundEl.innerHTML = (profit >= 0 ? '+' : '') + '$' + profit.toFixed(4);
+                fundEl.className = 'stat-val ' + (profit >= 0 ? 'green' : 'red');
                 
-                const p = await fetch(`${B}/open_positions.json`);
-                const pos = await p.json();
-                const pe = document.getElementById('pos');
-                const pc = document.getElementById('pc');
-                if (!pos || !Object.keys(pos).length) {
-                    pe.innerHTML = '<div style="color:#666;text-align:center">Нет</div>';
-                    pc.innerText = '0';
-                } else {
-                    const arr = Object.values(pos);
-                    pc.innerText = arr.length;
-                    pe.innerHTML = arr.map(p => {
-                        const e = p.entry || 0, c = p.current_price || e, q = p.quantity || 0;
-                        const side = p.side || 'BUY';
-                        const pnl = side === 'BUY' ? (c - e) * q : (e - c) * q;
-                        const sym = (p.symbol || '').replace('PERP', 'USDC');
-                        const tr = p.trailing_activated ? ' 🛡' : '';
-                        const tk = p.take ? ' TP:' + p.take.toFixed(4) : '';
-                        return '<div class="p ' + side + '"><div class="ph"><span class="ps">' + sym + ' ' + (side === 'BUY' ? 'L' : 'S') + tr + '</span><span class="' + (pnl >= 0 ? 'g' : 'r') + '">' + (pnl >= 0 ? '+' : '') + '$' + pnl.toFixed(4) + '</span></div><div class="pi">E:$' + e.toFixed(4) + ' C:$' + c.toFixed(4) + ' S:$' + (p.stop || 0).toFixed(4) + tk + '</div></div>';
-                    }).join('');
-                }
-                
-                const t = await fetch(`${B}/trades.json`);
-                const tr = await t.json();
-                const te = document.getElementById('trd');
-                const tc = document.getElementById('tc');
-                if (!tr || !Object.keys(tr).length) {
-                    te.innerHTML = '<div style="color:#666;text-align:center">Нет</div>';
-                    tc.innerText = '0';
-                } else {
-                    const arr = Object.values(tr).reverse();
-                    tc.innerText = arr.length;
-                    te.innerHTML = arr.map(t => {
-                        const sym = (t.symbol || '').replace('PERP', 'USDC');
-                        const pnl = t.profit || 0;
-                        const reason = t.reason === 'take_profit' ? '🎯' : t.reason === 'stop_loss' ? '🛑' : '';
-                        return '<div class="t"><div class="th"><span><b>' + sym + '</b> ' + (t.side || '') + '<span class="reason">' + reason + '</span></span><span class="pb ' + (pnl >= 0 ? 'w' : 'loss') + '">' + (pnl >= 0 ? '+' : '') + '$' + pnl.toFixed(4) + '</span></div><div class="pi">' + (t.open_time_str || '') + ' | E:$' + (t.entry || 0).toFixed(4) + ' X:$' + (t.exit || 0).toFixed(4) + '</div></div>';
-                    }).join('');
-                }
-            } catch (e) {}
+                const timer = current.funding_timer || 0;
+                document.getElementById('timer').innerText = fmtTime(timer);
+            }
+            
+            const stats = await fetchFB('stats');
+            if (stats) document.getElementById('total').innerText = stats.total || 0;
+            
+            const positions = await fetchFB('open_positions');
+            const pe = document.getElementById('positions');
+            if (!positions || Object.keys(positions).length === 0) {
+                pe.innerHTML = '<div style="text-align:center;color:#666;padding:20px;">Нет открытых позиций</div>';
+                document.getElementById('posCount').innerText = '0';
+            } else {
+                const arr = Object.values(positions);
+                document.getElementById('posCount').innerText = arr.length;
+                pe.innerHTML = arr.map(p => {
+                    const entry = p.entry || 0, current = p.current_price || entry, qty = p.quantity || 0;
+                    const side = p.side || 'BUY', stop = p.stop || 0, take = p.take || 0;
+                    const pnl = side === 'BUY' ? (current - entry) * qty : (entry - current) * qty;
+                    const pnlPct = entry > 0 ? (pnl / (entry * qty) * 100) : 0;
+                    const sym = (p.symbol || '').replace('PERP', 'USDC');
+                    const isPerp = (p.symbol || '').includes('PERP');
+                    const fundingRate = p.funding_rate || 0;
+                    
+                    const badges = [];
+                    if (isPerp) badges.push('<span class="badge badge-usdc">USDC</span>');
+                    if (p.trailing_activated) badges.push('<span class="badge badge-trailing">🛡️ Трейлинг</span>');
+                    if (Math.abs(fundingRate) > 0.0001) badges.push('<span class="badge badge-funding">F:' + (fundingRate*100).toFixed(4) + '%</span>');
+                    
+                    return `<div class="pos ${side}">
+                        <div class="pos-header">
+                            <span>
+                                <span class="pos-symbol">${sym}</span>
+                                <span class="pos-side ${side}">${side === 'BUY' ? 'LONG' : 'SHORT'}</span>
+                                ${badges.join(' ')}
+                            </span>
+                            <span class="pos-pnl ${pnl >= 0 ? 'green' : 'red'}">
+                                ${pnl >= 0 ? '+' : ''}$${pnl.toFixed(4)}
+                                <span style="font-size:12px;font-weight:400">(${pnlPct >= 0 ? '+' : ''}${pnlPct.toFixed(2)}%)</span>
+                            </span>
+                        </div>
+                        <div class="pos-info">
+                            <div>Вход: <span>$${entry.toFixed(6)}</span></div>
+                            <div>Текущая: <span>$${current.toFixed(6)}</span></div>
+                            <div>Стоп: <span>$${stop.toFixed(6)}</span></div>
+                            <div>Тейк: <span>$${take.toFixed(6)}</span></div>
+                            <div>Объём: <span>$${(p.position_usdt || 0).toFixed(2)}</span></div>
+                            <div>Открыта: <span>${p.open_time_str || '—'}</span></div>
+                        </div>
+                    </div>`;
+                }).join('');
+            }
+            
+            const trades = await fetchFB('trades');
+            const te = document.getElementById('trades');
+            if (!trades || Object.keys(trades).length === 0) {
+                te.innerHTML = '<div style="text-align:center;color:#666;padding:20px;">Нет закрытых сделок</div>';
+                document.getElementById('tradeCount').innerText = '0';
+            } else {
+                const arr = Object.values(trades).reverse();
+                document.getElementById('tradeCount').innerText = arr.length;
+                te.innerHTML = arr.map(t => {
+                    const sym = (t.symbol || '').replace('PERP', 'USDC');
+                    const reason = t.reason || '';
+                    const reasonClass = reason === 'take_profit' ? 'take' : 'stop';
+                    const reasonText = reason === 'take_profit' ? '🎯 Тейк' : reason === 'stop_loss' ? '🛑 Стоп' : '';
+                    return `<div class="trade">
+                        <div class="trade-header">
+                            <span>
+                                <span class="trade-symbol">${sym}</span>
+                                <span class="trade-side">${t.side || ''}</span>
+                                ${reasonText ? `<span class="trade-reason ${reasonClass}">${reasonText}</span>` : ''}
+                            </span>
+                            <span class="profit-badge ${(t.profit || 0) >= 0 ? 'win' : 'loss'}">
+                                ${(t.profit || 0) >= 0 ? '+' : ''}$${(t.profit || 0).toFixed(4)}
+                            </span>
+                        </div>
+                        <div class="trade-details">
+                            <div>Вход: $${(t.entry || 0).toFixed(6)}</div>
+                            <div>Выход: $${(t.exit || 0).toFixed(6)}</div>
+                            <div>%: ${(t.profit_percent || 0).toFixed(2)}%</div>
+                            <div>${t.open_time_str || ''}</div>
+                        </div>
+                    </div>`;
+                }).join('');
+            }
         }
         
         update();
-        setInterval(update, 300);
+        setInterval(update, 500);
     </script>
 </body>
 </html>
