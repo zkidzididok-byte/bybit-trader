@@ -42,7 +42,7 @@
         .profit-badge.loss { background: #F4433622; color: #F44336; }
         .trade-details { font-size: 11px; color: #666; margin-top: 8px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
         .trade-reason { font-size: 10px; padding: 1px 6px; border-radius: 4px; }
-        .trade-reason.take { background: #4CAF5022; color: #4CAF50; }
+        .trade-reason.trailing { background: #667eea22; color: #667eea; }
         .trade-reason.stop { background: #F4433622; color: #F44336; }
         @media (max-width: 768px) {
             .stats { grid-template-columns: repeat(3, 1fr); }
@@ -54,7 +54,7 @@
 <body>
     <div class="header">
         <h1>🔗 Стратегия 7 — USDC/USDT Pair Trading</h1>
-        <p>69 пар | Всегда в рынке | Стоп 2% | Тейк 0.5% | Комиссия 0.11%</p>
+        <p>69 пар | Трейлинг -3%/+0.75%→+0.5% | Кулдаун 60мин | Фандинг</p>
     </div>
     
     <div class="stats">
@@ -108,8 +108,7 @@
                 fundEl.innerHTML = (profit >= 0 ? '+' : '') + '$' + profit.toFixed(4);
                 fundEl.className = 'stat-val ' + (profit >= 0 ? 'green' : 'red');
                 
-                const timer = current.funding_timer || 0;
-                document.getElementById('timer').innerText = fmtTime(timer);
+                document.getElementById('timer').innerText = fmtTime(current.funding_timer || 0);
             }
             
             const stats = await fetchFB('stats');
@@ -125,7 +124,7 @@
                 document.getElementById('posCount').innerText = arr.length;
                 pe.innerHTML = arr.map(p => {
                     const entry = p.entry || 0, current = p.current_price || entry, qty = p.quantity || 0;
-                    const side = p.side || 'BUY', stop = p.stop || 0, take = p.take || 0;
+                    const side = p.side || 'BUY', stop = p.stop || 0;
                     const pnl = side === 'BUY' ? (current - entry) * qty : (entry - current) * qty;
                     const pnlPct = entry > 0 ? (pnl / (entry * qty) * 100) : 0;
                     const sym = (p.symbol || '').replace('PERP', 'USDC');
@@ -139,23 +138,16 @@
                     
                     return `<div class="pos ${side}">
                         <div class="pos-header">
-                            <span>
-                                <span class="pos-symbol">${sym}</span>
-                                <span class="pos-side ${side}">${side === 'BUY' ? 'LONG' : 'SHORT'}</span>
-                                ${badges.join(' ')}
-                            </span>
-                            <span class="pos-pnl ${pnl >= 0 ? 'green' : 'red'}">
-                                ${pnl >= 0 ? '+' : ''}$${pnl.toFixed(4)}
-                                <span style="font-size:12px;font-weight:400">(${pnlPct >= 0 ? '+' : ''}${pnlPct.toFixed(2)}%)</span>
-                            </span>
+                            <span><span class="pos-symbol">${sym}</span> <span class="pos-side ${side}">${side==='BUY'?'LONG':'SHORT'}</span> ${badges.join(' ')}</span>
+                            <span class="pos-pnl ${pnl>=0?'green':'red'}">${pnl>=0?'+':''}$${pnl.toFixed(4)} (${pnlPct>=0?'+':''}${pnlPct.toFixed(2)}%)</span>
                         </div>
                         <div class="pos-info">
                             <div>Вход: <span>$${entry.toFixed(6)}</span></div>
-                            <div>Текущая: <span>$${current.toFixed(6)}</span></div>
+                            <div>Тек: <span>$${current.toFixed(6)}</span></div>
                             <div>Стоп: <span>$${stop.toFixed(6)}</span></div>
-                            <div>Тейк: <span>$${take.toFixed(6)}</span></div>
-                            <div>Объём: <span>$${(p.position_usdt || 0).toFixed(2)}</span></div>
-                            <div>Открыта: <span>${p.open_time_str || '—'}</span></div>
+                            <div>Объём: <span>$${(p.position_usdt||0).toFixed(2)}</span></div>
+                            <div>Кол-во: <span>${qty.toFixed(6)}</span></div>
+                            <div>Открыта: <span>${p.open_time_str||'—'}</span></div>
                         </div>
                     </div>`;
                 }).join('');
@@ -172,24 +164,18 @@
                 te.innerHTML = arr.map(t => {
                     const sym = (t.symbol || '').replace('PERP', 'USDC');
                     const reason = t.reason || '';
-                    const reasonClass = reason === 'take_profit' ? 'take' : 'stop';
-                    const reasonText = reason === 'take_profit' ? '🎯 Тейк' : reason === 'stop_loss' ? '🛑 Стоп' : '';
+                    const reasonClass = reason === 'trailing_stop' ? 'trailing' : 'stop';
+                    const reasonText = reason === 'trailing_stop' ? '🛡️ Трейлинг' : reason === 'stop_loss' ? '🛑 Стоп' : '';
                     return `<div class="trade">
                         <div class="trade-header">
-                            <span>
-                                <span class="trade-symbol">${sym}</span>
-                                <span class="trade-side">${t.side || ''}</span>
-                                ${reasonText ? `<span class="trade-reason ${reasonClass}">${reasonText}</span>` : ''}
-                            </span>
-                            <span class="profit-badge ${(t.profit || 0) >= 0 ? 'win' : 'loss'}">
-                                ${(t.profit || 0) >= 0 ? '+' : ''}$${(t.profit || 0).toFixed(4)}
-                            </span>
+                            <span><span class="trade-symbol">${sym}</span> <span class="trade-side">${t.side||''}</span> ${reasonText ? `<span class="trade-reason ${reasonClass}">${reasonText}</span>` : ''}</span>
+                            <span class="profit-badge ${(t.profit||0)>=0?'win':'loss'}">${(t.profit||0)>=0?'+':''}$${(t.profit||0).toFixed(4)}</span>
                         </div>
                         <div class="trade-details">
-                            <div>Вход: $${(t.entry || 0).toFixed(6)}</div>
-                            <div>Выход: $${(t.exit || 0).toFixed(6)}</div>
-                            <div>%: ${(t.profit_percent || 0).toFixed(2)}%</div>
-                            <div>${t.open_time_str || ''}</div>
+                            <div>Вход: $${(t.entry||0).toFixed(6)}</div>
+                            <div>Выход: $${(t.exit||0).toFixed(6)}</div>
+                            <div>%: ${(t.profit_percent||0).toFixed(2)}%</div>
+                            <div>${t.open_time_str||''}</div>
                         </div>
                     </div>`;
                 }).join('');
