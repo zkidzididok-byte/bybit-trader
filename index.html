@@ -54,7 +54,7 @@
 <body>
     <div class="header">
         <h1>🔗 Стратегия 7 — USDC/USDT Pair Trading</h1>
-        <p>69 пар | Трейлинг -3%/+0.75%→+0.5% | Кулдаун 60мин | Фандинг</p>
+        <p>69 пар | Трейлинг -5%/+0.75%→+0.5% | Кулдаун 60мин | Фандинг</p>
     </div>
     
     <div class="stats">
@@ -82,7 +82,8 @@
         
         async function fetchFB(endpoint) {
             try {
-                const r = await fetch(`${BASE}/${path}/${endpoint}.json`);
+                // Случайный параметр чтобы браузер НЕ кэшировал
+                const r = await fetch(`${BASE}/${path}/${endpoint}.json?_=${Date.now()}`);
                 return await r.json();
             } catch(e) { return null; }
         }
@@ -183,7 +184,7 @@
         }
         
         update();
-        setInterval(update, 500);
+        setInterval(update, 1000);
     </script>
 </body>
 </html>
