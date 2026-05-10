@@ -7,43 +7,46 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #0a0a0f; color: #fff; font-family: 'Segoe UI', Arial, sans-serif; padding: 20px; }
-        .header { background: linear-gradient(135deg, #667eea 0%, #f093fb 100%); padding: 24px; border-radius: 16px; margin-bottom: 20px; text-align: center; }
-        .header h1 { font-size: 24px; font-weight: 700; }
-        .header p { color: rgba(255,255,255,0.8); font-size: 13px; margin-top: 6px; }
-        .stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 20px; }
-        .stat { background: #13131a; border-radius: 14px; padding: 18px; text-align: center; border: 1px solid #222; }
-        .stat-val { font-size: 24px; font-weight: 700; }
-        .stat-lbl { font-size: 11px; color: #666; margin-top: 4px; text-transform: uppercase; letter-spacing: 1px; }
+        .header { background: linear-gradient(135deg, #667eea 0%, #f093fb 100%); padding: 20px; border-radius: 16px; margin-bottom: 20px; text-align: center; }
+        .header h1 { font-size: 22px; font-weight: 700; }
+        .header p { color: rgba(255,255,255,0.8); font-size: 12px; margin-top: 6px; }
+        .stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 20px; }
+        .stat { background: #13131a; border-radius: 14px; padding: 14px; text-align: center; border: 1px solid #222; }
+        .stat-val { font-size: 20px; font-weight: 700; }
+        .stat-lbl { font-size: 10px; color: #666; margin-top: 4px; text-transform: uppercase; letter-spacing: 1px; }
         .green { color: #4CAF50; } .red { color: #F44336; } .gold { color: #FFD700; } .purple { color: #f093fb; }
-        .card { background: #13131a; border-radius: 16px; padding: 20px; margin-bottom: 16px; border: 1px solid #222; }
-        .card h3 { margin-bottom: 16px; color: #888; font-size: 14px; text-transform: uppercase; letter-spacing: 2px; }
-        .pos { background: #1a1a24; border-radius: 12px; padding: 16px; margin: 8px 0; border-left: 4px solid #4CAF50; transition: all 0.2s; }
+        .card { background: #13131a; border-radius: 16px; padding: 16px; margin-bottom: 16px; border: 1px solid #222; }
+        .card h3 { margin-bottom: 12px; color: #888; font-size: 13px; text-transform: uppercase; letter-spacing: 2px; }
+        .pos { background: #1a1a24; border-radius: 12px; padding: 12px; margin: 6px 0; border-left: 4px solid #4CAF50; transition: all 0.2s; }
         .pos.SELL { border-left-color: #F44336; }
         .pos:hover { background: #1e1e2a; }
-        .pos-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
-        .pos-symbol { font-size: 16px; font-weight: 700; }
-        .pos-side { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
+        .pos-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+        .pos-symbol { font-size: 14px; font-weight: 700; }
+        .pos-side { padding: 3px 8px; border-radius: 20px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
         .pos-side.BUY { background: #4CAF5022; color: #4CAF50; } 
         .pos-side.SELL { background: #F4433622; color: #F44336; }
-        .pos-pnl { font-size: 18px; font-weight: 700; }
-        .pos-info { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; font-size: 12px; color: #888; }
+        .pos-pnl { font-size: 16px; font-weight: 700; }
+        .pos-info { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; font-size: 11px; color: #888; }
         .pos-info span { color: #aaa; font-weight: 500; }
-        .badge { padding: 3px 8px; border-radius: 8px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
+        .badge { padding: 2px 6px; border-radius: 8px; font-size: 9px; font-weight: 700; text-transform: uppercase; }
         .badge-trailing { background: #667eea22; color: #667eea; }
         .badge-usdc { background: #f093fb22; color: #f093fb; }
         .badge-funding { background: #FFD70022; color: #FFD700; }
-        .trade { background: #1a1a24; border-radius: 12px; padding: 14px; margin: 6px 0; border: 1px solid #222; }
+        .badge-size10 { background: #4CAF5022; color: #4CAF50; }
+        .badge-size30 { background: #FF980022; color: #FF9800; }
+        .trade { background: #1a1a24; border-radius: 12px; padding: 10px; margin: 4px 0; border: 1px solid #222; }
         .trade:hover { background: #1e1e2a; }
-        .trade-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
-        .trade-symbol { font-weight: 700; }
-        .trade-side { font-size: 11px; color: #888; }
-        .profit-badge { padding: 5px 12px; border-radius: 20px; font-weight: 700; font-size: 14px; }
+        .trade-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px; }
+        .trade-symbol { font-weight: 700; font-size: 13px; }
+        .trade-side { font-size: 10px; color: #888; }
+        .profit-badge { padding: 4px 10px; border-radius: 20px; font-weight: 700; font-size: 13px; }
         .profit-badge.win { background: #4CAF5022; color: #4CAF50; } 
         .profit-badge.loss { background: #F4433622; color: #F44336; }
-        .trade-details { font-size: 11px; color: #666; margin-top: 8px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
-        .trade-reason { font-size: 10px; padding: 1px 6px; border-radius: 4px; }
+        .trade-details { font-size: 10px; color: #666; margin-top: 6px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+        .trade-reason { font-size: 9px; padding: 1px 5px; border-radius: 4px; }
         .trade-reason.trailing { background: #667eea22; color: #667eea; }
         .trade-reason.stop { background: #F4433622; color: #F44336; }
+        .trade-reason.daily { background: #FFD70022; color: #FFD700; }
         @media (max-width: 768px) {
             .stats { grid-template-columns: repeat(3, 1fr); }
             .pos-info { grid-template-columns: repeat(2, 1fr); }
@@ -54,7 +57,7 @@
 <body>
     <div class="header">
         <h1>🔗 Стратегия 7 — USDC/USDT Pair Trading</h1>
-        <p>69 пар | Трейлинг -5%/+0.75%→+0.5% | Кулдаун 60мин | Фандинг</p>
+        <p>69 пар | Трейлинг +3%→+2.5% | Стоп -1.5% | 10$/30$ | Кулдаун 60мин</p>
     </div>
     
     <div class="stats">
@@ -82,7 +85,6 @@
         
         async function fetchFB(endpoint) {
             try {
-                // Случайный параметр чтобы браузер НЕ кэшировал
                 const r = await fetch(`${BASE}/${path}/${endpoint}.json?_=${Date.now()}`);
                 return await r.json();
             } catch(e) { return null; }
@@ -131,24 +133,28 @@
                     const sym = (p.symbol || '').replace('PERP', 'USDC');
                     const isPerp = (p.symbol || '').includes('PERP');
                     const fundingRate = p.funding_rate || 0;
+                    const posSize = p.position_usdt || 10;
+                    const isLarge = posSize >= 25;
                     
                     const badges = [];
                     if (isPerp) badges.push('<span class="badge badge-usdc">USDC</span>');
-                    if (p.trailing_activated) badges.push('<span class="badge badge-trailing">🛡️ Трейлинг</span>');
+                    if (p.trailing_activated) badges.push('<span class="badge badge-trailing">🛡️</span>');
                     if (Math.abs(fundingRate) > 0.0001) badges.push('<span class="badge badge-funding">F:' + (fundingRate*100).toFixed(4) + '%</span>');
+                    badges.push('<span class="badge ' + (isLarge ? 'badge-size30' : 'badge-size10') + '">' + (isLarge ? '30$' : '10$') + '</span>');
+                    
+                    const stopColor = p.trailing_activated ? 'gold' : '';
+                    const stopVal = stop.toFixed(6);
                     
                     return `<div class="pos ${side}">
                         <div class="pos-header">
-                            <span><span class="pos-symbol">${sym}</span> <span class="pos-side ${side}">${side==='BUY'?'LONG':'SHORT'}</span> ${badges.join(' ')}</span>
+                            <span><span class="pos-symbol">${sym}</span> <span class="pos-side ${side}">${side==='BUY'?'L':'S'}</span> ${badges.join(' ')}</span>
                             <span class="pos-pnl ${pnl>=0?'green':'red'}">${pnl>=0?'+':''}$${pnl.toFixed(4)} (${pnlPct>=0?'+':''}${pnlPct.toFixed(2)}%)</span>
                         </div>
                         <div class="pos-info">
-                            <div>Вход: <span>$${entry.toFixed(6)}</span></div>
-                            <div>Тек: <span>$${current.toFixed(6)}</span></div>
-                            <div>Стоп: <span>$${stop.toFixed(6)}</span></div>
-                            <div>Объём: <span>$${(p.position_usdt||0).toFixed(2)}</span></div>
-                            <div>Кол-во: <span>${qty.toFixed(6)}</span></div>
-                            <div>Открыта: <span>${p.open_time_str||'—'}</span></div>
+                            <div>Вход: $${entry.toFixed(4)}</div>
+                            <div>Тек: $${current.toFixed(4)}</div>
+                            <div>Стоп: <span style="color:${stopColor}">$${stopVal}</span></div>
+                            <div>Объём: $${posSize.toFixed(2)}</div>
                         </div>
                     </div>`;
                 }).join('');
@@ -165,16 +171,20 @@
                 te.innerHTML = arr.map(t => {
                     const sym = (t.symbol || '').replace('PERP', 'USDC');
                     const reason = t.reason || '';
-                    const reasonClass = reason === 'trailing_stop' ? 'trailing' : 'stop';
-                    const reasonText = reason === 'trailing_stop' ? '🛡️ Трейлинг' : reason === 'stop_loss' ? '🛑 Стоп' : '';
+                    let reasonClass = 'stop';
+                    let reasonText = '';
+                    if (reason === 'trailing_stop') { reasonClass = 'trailing'; reasonText = '🛡️ Трейлинг'; }
+                    else if (reason === 'stop_loss') { reasonClass = 'stop'; reasonText = '🛑 Стоп'; }
+                    else if (reason === 'daily_trailing_close') { reasonClass = 'daily'; reasonText = '🌙 Дневное'; }
+                    
                     return `<div class="trade">
                         <div class="trade-header">
                             <span><span class="trade-symbol">${sym}</span> <span class="trade-side">${t.side||''}</span> ${reasonText ? `<span class="trade-reason ${reasonClass}">${reasonText}</span>` : ''}</span>
                             <span class="profit-badge ${(t.profit||0)>=0?'win':'loss'}">${(t.profit||0)>=0?'+':''}$${(t.profit||0).toFixed(4)}</span>
                         </div>
                         <div class="trade-details">
-                            <div>Вход: $${(t.entry||0).toFixed(6)}</div>
-                            <div>Выход: $${(t.exit||0).toFixed(6)}</div>
+                            <div>Вход: $${(t.entry||0).toFixed(4)}</div>
+                            <div>Выход: $${(t.exit||0).toFixed(4)}</div>
                             <div>%: ${(t.profit_percent||0).toFixed(2)}%</div>
                             <div>${t.open_time_str||''}</div>
                         </div>
