@@ -7,66 +7,55 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', sans-serif; background: #0a0e27; color: #fff; min-height: 100vh; }
-        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
-        .header { display: flex; justify-content: space-between; align-items: center; padding: 20px; background: #1a1f3a; border-radius: 16px; margin-bottom: 20px; }
-        .header h1 { background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .status { display: flex; align-items: center; gap: 8px; }
-        .dot { width: 10px; height: 10px; border-radius: 50%; background: #4CAF50; }
-        .dot.off { background: #f44336; }
-
-        .balance-card { background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 20px; padding: 30px; margin-bottom: 20px; }
-        .balance { font-size: 3em; font-weight: bold; }
-        .pnl { font-size: 1.3em; margin-top: 5px; }
-        .green { color: #4CAF50; }
-        .red { color: #f44336; }
-
-        .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
-        .stat { background: #1a1f3a; border-radius: 12px; padding: 16px; text-align: center; }
-        .stat .label { font-size: 0.8em; opacity: 0.7; }
-        .stat .value { font-size: 1.4em; font-weight: bold; margin-top: 5px; }
-
-        .section { background: #1a1f3a; border-radius: 16px; padding: 20px; margin-bottom: 20px; }
-        .section h2 { color: #667eea; margin-bottom: 15px; }
-
-        .trade-card { background: #0d1128; border-radius: 12px; padding: 16px; margin-bottom: 10px; border-left: 4px solid #667eea; }
-        .trade-card.LONG { border-left-color: #4CAF50; }
-        .trade-card.SHORT { border-left-color: #f44336; }
-        .trade-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        .trade-symbol { font-size: 1.2em; font-weight: bold; }
-        .trade-dir { padding: 4px 14px; border-radius: 20px; font-weight: bold; font-size: 0.85em; }
-        .trade-dir.LONG { background: rgba(76,175,80,0.2); color: #4CAF50; }
-        .trade-dir.SHORT { background: rgba(244,67,54,0.2); color: #f44336; }
-        .trade-info { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
-        .trade-info span { display: block; }
-        .trade-info .lbl { font-size: 0.75em; opacity: 0.7; }
-        .trade-info .val { font-weight: bold; }
-
-        table { width: 100%; border-collapse: collapse; }
-        th { background: #0d1128; padding: 10px; text-align: left; color: #667eea; }
-        td { padding: 10px; border-bottom: 1px solid #2a2f4a; }
-        .badge { padding: 3px 10px; border-radius: 12px; font-size: 0.8em; font-weight: bold; }
-        .badge.LONG { background: rgba(76,175,80,0.2); color: #4CAF50; }
-        .badge.SHORT { background: rgba(244,67,54,0.2); color: #f44336; }
-        .badge.LIQUIDATED { background: rgba(255,152,0,0.2); color: #ff9800; }
-
-        .markets { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
-        .market { background: #0d1128; border-radius: 12px; padding: 16px; text-align: center; }
-        .market .price { font-size: 1.5em; font-weight: bold; }
-        .empty { text-align: center; padding: 30px; opacity: 0.5; }
-        .liq-alert { background: rgba(255,152,0,0.15); border: 1px solid #ff9800; border-radius: 8px; padding: 10px; margin-top: 5px; font-size: 0.85em; }
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:'Segoe UI',sans-serif;background:#0a0e27;color:#fff;min-height:100vh}
+        .container{max-width:1400px;margin:0 auto;padding:20px}
+        .header{display:flex;justify-content:space-between;align-items:center;padding:20px;background:#1a1f3a;border-radius:16px;margin-bottom:20px}
+        .header h1{background:linear-gradient(135deg,#667eea,#764ba2);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+        .dot{width:10px;height:10px;border-radius:50%;background:#4CAF50;display:inline-block}
+        .dot.off{background:#f44336}
+        .balance-card{background:linear-gradient(135deg,#667eea,#764ba2);border-radius:20px;padding:30px;margin-bottom:20px}
+        .balance{font-size:3em;font-weight:bold}
+        .green{color:#4CAF50}.red{color:#f44336}
+        .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+        .stat{background:#1a1f3a;border-radius:12px;padding:16px;text-align:center}
+        .stat .label{font-size:.8em;opacity:.7}
+        .stat .value{font-size:1.4em;font-weight:bold;margin-top:5px}
+        .section{background:#1a1f3a;border-radius:16px;padding:20px;margin-bottom:20px}
+        .section h2{color:#667eea;margin-bottom:15px}
+        .trade-card{background:#0d1128;border-radius:12px;padding:16px;margin-bottom:10px;border-left:4px solid #667eea}
+        .trade-card.LONG{border-left-color:#4CAF50}
+        .trade-card.SHORT{border-left-color:#f44336}
+        .trade-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+        .trade-symbol{font-size:1.2em;font-weight:bold}
+        .trade-dir{padding:4px 14px;border-radius:20px;font-weight:bold;font-size:.85em}
+        .trade-dir.LONG{background:rgba(76,175,80,.2);color:#4CAF50}
+        .trade-dir.SHORT{background:rgba(244,67,54,.2);color:#f44336}
+        .trade-info{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+        .trade-info .lbl{font-size:.75em;opacity:.7}
+        .trade-info .val{font-weight:bold}
+        table{width:100%;border-collapse:collapse}
+        th{background:#0d1128;padding:10px;text-align:left;color:#667eea}
+        td{padding:10px;border-bottom:1px solid #2a2f4a}
+        .badge{padding:3px 10px;border-radius:12px;font-size:.8em;font-weight:bold}
+        .badge.LONG{background:rgba(76,175,80,.2);color:#4CAF50}
+        .badge.SHORT{background:rgba(244,67,54,.2);color:#f44336}
+        .badge.LIQUIDATED{background:rgba(255,152,0,.2);color:#ff9800}
+        .markets{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+        .market{background:#0d1128;border-radius:12px;padding:16px;text-align:center}
+        .market .price{font-size:1.5em;font-weight:bold}
+        .empty{text-align:center;padding:30px;opacity:.5}
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
             <h1>📊 Trading Dashboard</h1>
-            <div class="status"><div class="dot" id="dot"></div><span id="statusText">Загрузка...</span></div>
+            <div><span class="dot" id="dot"></span> <span id="statusText">Загрузка...</span></div>
         </div>
         <div class="balance-card">
             <div class="balance" id="balance">$10,000</div>
-            <div class="pnl" id="pnlInfo"></div>
+            <div id="pnlInfo"></div>
         </div>
         <div class="stats">
             <div class="stat"><div class="label">Доступно</div><div class="value" id="available">$10,000</div></div>
@@ -80,18 +69,44 @@
     </div>
     <script>
         firebase.initializeApp({
-            apiKey: "AIzaSyDn3khNbagwGPKSkup5nv12H9n6q8mvv9g",
-            authDomain: "market-sim-350b1.firebaseapp.com",
-            projectId: "market-sim-350b1",
-            storageBucket: "market-sim-350b1.firebasestorage.app",
-            messagingSenderId: "259052430410",
-            appId: "1:259052430410:web:132cff02cf988294d032b3"
+            apiKey:"AIzaSyDn3khNbagwGPKSkup5nv12H9n6q8mvv9g",
+            authDomain:"market-sim-350b1.firebaseapp.com",
+            projectId:"market-sim-350b1",
+            storageBucket:"market-sim-350b1.firebasestorage.app",
+            messagingSenderId:"259052430410",
+            appId:"1:259052430410:web:132cff02cf988294d032b3"
         });
-        const db = firebase.firestore();
-        const mp = {};
-        ['BTCUSDT','ETHUSDT','SOLUSDT'].forEach(s => db.collection('market_state').doc(s).onSnapshot(d => { if(d.exists) { mp[s]=d.data(); updateMarkets(); } }));
-        db.collection('trading_state').doc('current').onSnapshot(d => { if(d.exists) { const x=d.data(); document.getElementById('balance').textContent='$'+(x.balance+(x.floating_pnl||0)).toFixed(2); document.getElementById('available').textContent='$'+(x.available_balance||0).toFixed(2); document.getElementById('openCount').textContent=x.open_count||0; document.getElementById('totalTrades').textContent=x.total_trades||0; const w=(x.closed_trades||[]).filter(t=>t.pnl>0).length; document.getElementById('winRate').textContent=((w/(x.total_trades||1))*100).toFixed(1)+'%'; document.getElementById('pnlInfo').innerHTML='<span class="'+(x.total_pnl>=0?'green':'red')+'">'+(x.total_pnl>=0?'+':'')+'$'+(x.total_pnl||0).toFixed(2)+' ('+(x.total_pnl_percent||0).toFixed(2)+'%)</span>'; const ot=document.getElementById('openTrades'); if(!x.open_trades||!x.open_trades.length) ot.innerHTML='<div class="empty">Нет открытых сделок</div>'; else ot.innerHTML=x.open_trades.map(t=>'<div class="trade-card '+t.direction+'"><div class="trade-top"><span class="trade-symbol">'+t.symbol+'</span><span class="trade-dir '+t.direction+'">'+t.direction+' x'+t.leverage+'</span></div><div class="trade-info"><span><span class="lbl">Вход</span><span class="val">$'+(t.entry_price||0).toFixed(2)+'</span></span><span><span class="lbl">Текущая</span><span class="val">$'+(t.current_price||0).toFixed(2)+'</span></span><span><span class="lbl">Ликв.</span><span class="val" style="color:#ff9800">$'+(t.liquidation_price||0).toFixed(2)+'</span></span><span><span class="lbl">P&L</span><span class="val '+(t.pnl>=0?'green':'red')+'">'+(t.pnl>=0?'+':'')+'$'+(t.pnl||0).toFixed(2)+' ('+(t.pnl_percent||0).toFixed(2)+'%)</span></span></div></div>').join(''); const hd=document.getElementById('history'); if(!x.closed_trades||!x.closed_trades.length) hd.innerHTML='<tr><td colspan="8" class="empty">Нет сделок</td></tr>'; else hd.innerHTML=x.closed_trades.map(t=>'<tr><td>'+new Date(t.close_time).toLocaleString()+'</td><td><b>'+t.symbol+'</b></td><td><span class="badge '+t.direction+'">'+t.direction+'</span></td><td>$'+(t.entry_price||0).toFixed(2)+'</td><td>$'+(t.exit_price||0).toFixed(2)+'</td><td class="'+(t.pnl>=0?'green':'red')+'">'+(t.pnl>=0?'+':'')+'$'+(t.pnl||0).toFixed(2)+'</td><td class="'+(t.pnl_percent>=0?'green':'red')+'">'+(t.pnl_percent>=0?'+':'')+(t.pnl_percent||0).toFixed(2)+'%</td><td><span class="badge '+t.status+'">'+(t.status==='CLOSED'?'Закрыта':'Ликв.')+'</span></td></tr>').join(''); document.getElementById('dot').classList.remove('off'); document.getElementById('statusText').textContent='Онлайн'; } }, () => { document.getElementById('dot').classList.add('off'); document.getElementById('statusText').textContent='Офлайн'; });
-        function updateMarkets() { document.getElementById('markets').innerHTML=['BTCUSDT','ETHUSDT','SOLUSDT'].map(s=>{ const m=mp[s]||{}; return '<div class="market"><h3>'+s.replace('USDT','')+'</h3><div class="price">$'+(m.price||0).toFixed(2)+'</div><div class="'+(m.price_change_24h>=0?'green':'red')+'">'+(m.price_change_24h>=0?'+':'')+(m.price_change_24h||0).toFixed(2)+'%</div></div>'; }).join(''); }
+        const db=firebase.firestore(),mp={};
+        ['BTCUSDT','ETHUSDT','SOLUSDT'].forEach(s=>db.collection('market_state').doc(s).onSnapshot(d=>{if(d.exists){mp[s]=d.data();updateMarkets()}}));
+        db.collection('trading_state').doc('current').onSnapshot(d=>{
+            if(d.exists){
+                const x=d.data();
+                document.getElementById('balance').textContent='$'+(x.balance+(x.floating_pnl||0)).toFixed(2);
+                document.getElementById('available').textContent='$'+(x.available_balance||0).toFixed(2);
+                document.getElementById('openCount').textContent=x.open_count||0;
+                document.getElementById('totalTrades').textContent=x.total_trades||0;
+                const w=(x.closed_trades||[]).filter(t=>t.pnl>0).length;
+                document.getElementById('winRate').textContent=((w/(x.total_trades||1))*100).toFixed(1)+'%';
+                document.getElementById('pnlInfo').innerHTML='<span class="'+(x.total_pnl>=0?'green':'red')+'">'+(x.total_pnl>=0?'+':'')+'$'+(x.total_pnl||0).toFixed(2)+' ('+(x.total_pnl_percent||0).toFixed(2)+'%)</span>';
+                const ot=document.getElementById('openTrades');
+                if(!x.open_trades||!x.open_trades.length) ot.innerHTML='<div class="empty">Нет открытых сделок</div>';
+                else ot.innerHTML=x.open_trades.map(t=>'<div class="trade-card '+t.direction+'"><div class="trade-top"><span class="trade-symbol">'+t.symbol+'</span><span class="trade-dir '+t.direction+'">'+t.direction+' x'+t.leverage+'</span></div><div class="trade-info"><span><span class="lbl">Вход</span><span class="val">$'+(t.entry_price||0).toFixed(2)+'</span></span><span><span class="lbl">Текущая</span><span class="val">$'+(t.current_price||0).toFixed(2)+'</span></span><span><span class="lbl">Ликв.</span><span class="val" style="color:#ff9800">$'+(t.liquidation_price||0).toFixed(2)+'</span></span><span><span class="lbl">P&L</span><span class="val '+(t.pnl>=0?'green':'red')+'">'+(t.pnl>=0?'+':'')+'$'+(t.pnl||0).toFixed(2)+' ('+(t.pnl_percent||0).toFixed(2)+'%)</span></span></div></div>').join('');
+                const hd=document.getElementById('history');
+                if(!x.closed_trades||!x.closed_trades.length) hd.innerHTML='<tr><td colspan="8" class="empty">Нет сделок</td></tr>';
+                else hd.innerHTML=x.closed_trades.map(t=>'<tr><td>'+new Date(t.close_time).toLocaleString()+'</td><td><b>'+t.symbol+'</b></td><td><span class="badge '+t.direction+'">'+t.direction+'</span></td><td>$'+(t.entry_price||0).toFixed(2)+'</td><td>$'+(t.exit_price||0).toFixed(2)+'</td><td class="'+(t.pnl>=0?'green':'red')+'">'+(t.pnl>=0?'+':'')+'$'+(t.pnl||0).toFixed(2)+'</td><td class="'+(t.pnl_percent>=0?'green':'red')+'">'+(t.pnl_percent>=0?'+':'')+(t.pnl_percent||0).toFixed(2)+'%</td><td><span class="badge '+t.status+'">'+(t.status==='CLOSED'?'Закрыта':'Ликв.')+'</span></td></tr>').join('');
+                document.getElementById('dot').classList.remove('off');
+                document.getElementById('statusText').textContent='Онлайн';
+            }
+        },()=>{
+            document.getElementById('dot').classList.add('off');
+            document.getElementById('statusText').textContent='Офлайн';
+        });
+        function updateMarkets(){
+            document.getElementById('markets').innerHTML=['BTCUSDT','ETHUSDT','SOLUSDT'].map(s=>{
+                const m=mp[s]||{};
+                return '<div class="market"><h3>'+s.replace('USDT','')+'</h3><div class="price">$'+(m.price||0).toFixed(2)+'</div><div class="'+(m.price_change_24h>=0?'green':'red')+'">'+(m.price_change_24h>=0?'+':'')+(m.price_change_24h||0).toFixed(2)+'%</div></div>';
+            }).join('');
+        }
     </script>
 </body>
 </html>
