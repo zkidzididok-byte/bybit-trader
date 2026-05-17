@@ -43,18 +43,15 @@
         .badge.STOP_LOSS{background:rgba(255,152,0,.2);color:#ff9800}
         .badge.TRAILING_STOP{background:rgba(0,188,212,.2);color:#00bcd4}
         .badge.LIQUIDATED{background:rgba(244,67,54,.3);color:#f44336}
+        .badge.CLOSED{background:rgba(76,175,80,.2);color:#4CAF50}
         .empty{text-align:center;padding:20px;opacity:.5}
-        .btn-long{background:#4CAF50;color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;font-weight:bold;margin:2px}
-        .btn-short{background:#f44336;color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;font-weight:bold;margin:2px}
-        .trade-form{background:#0d1128;border-radius:12px;padding:16px;margin-bottom:15px}
-        .trade-form select,.trade-form input{width:100%;padding:8px;margin:4px 0;background:#1a1f3a;border:1px solid #2a2f4a;border-radius:6px;color:#fff}
-        .trade-form button{width:100%;padding:10px;margin-top:6px;border:none;border-radius:6px;font-weight:bold;cursor:pointer;color:#fff}
+        .liq-signal{background:rgba(255,152,0,.15);border:1px solid #ff9800;border-radius:8px;padding:10px;margin-bottom:10px;font-size:.85em}
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>📊 Trading Dashboard</h1>
+            <h1>🤖 Auto Trading Bot</h1>
             <div><span class="dot" id="dot"></span> <span id="statusText">Загрузка...</span></div>
         </div>
         <div class="balance-card">
@@ -67,17 +64,9 @@
             <div class="stat"><div class="label">Всего сделок</div><div class="value" id="totalTrades">0</div></div>
             <div class="stat"><div class="label">Win Rate</div><div class="value" id="winRate">0%</div></div>
         </div>
-        <div class="section">
-            <h2>🔧 Открыть сделку вручную</h2>
-            <div class="trade-form">
-                <select id="mSymbol"><option value="BTCUSDT">BTC/USDT</option><option value="ETHUSDT">ETH/USDT</option><option value="SOLUSDT">SOL/USDT</option></select>
-                <select id="mDir"><option value="LONG">LONG</option><option value="SHORT">SHORT</option></select>
-                <button class="btn-long" onclick="openTrade()" style="background:#4CAF50">📈 LONG</button>
-                <button class="btn-short" onclick="openTradeShort()" style="background:#f44336">📉 SHORT</button>
-            </div>
-        </div>
+        <div id="liqSignals"></div>
         <div class="section"><h2>📈 Открытые сделки</h2><div id="openTrades"><div class="empty">Нет открытых сделок</div></div></div>
-        <div class="section"><h2>📋 История сделок</h2><table><thead><tr><th>Время</th><th>Монета</th><th>Напр.</th><th>Вход</th><th>Выход</th><th>P&L $</th><th>P&L %</th><th>Статус</th></tr></thead><tbody id="history"></tbody></table></div>
+        <div class="section"><h2>📋 История сделок</h2><table><thead><tr><th>Время</th><th>Монета</th><th>Плечо</th><th>Напр.</th><th>Вход</th><th>Выход</th><th>P&L $</th><th>P&L %</th><th>Статус</th></tr></thead><tbody id="history"></tbody></table></div>
     </div>
     <script>
         firebase.initializeApp({
@@ -89,6 +78,18 @@
             appId:"1:259052430410:web:132cff02cf988294d032b3"
         });
         const db=firebase.firestore();
+        
+        // Сигналы ликвидаций
+        ['BTCUSDT','ETHUSDT','SOLUSDT'].forEach(s=>{
+            db.collection('market_state').doc(s).onSnapshot(d=>{
+                if(d.exists&&d.data().last_liquidation){
+                    const l=d.data().last_liquidation;
+                    document.getElementById('liqSignals').innerHTML='<div class="liq-signal">⚡ Ликвидация '+s+': '+l.side+' $'+(l.price||0).toFixed(2)+' x '+l.quantity.toFixed(4)+'</div>';
+                }
+            });
+        });
+        
+        // Трейдинг
         db.collection('trading_state').doc('current').onSnapshot(d=>{
             if(d.exists){
                 const x=d.data();
@@ -98,14 +99,17 @@
                 document.getElementById('totalTrades').textContent=x.total_trades||0;
                 const w=(x.closed_trades||[]).filter(t=>t.pnl>0).length;
                 document.getElementById('winRate').textContent=((w/(x.total_trades||1))*100).toFixed(1)+'%';
-                const pnl=x.balance-1000;
+                const pnl=(x.balance||0)-1000;
                 document.getElementById('pnlInfo').innerHTML='<span class="'+(pnl>=0?'green':'red')+'">'+(pnl>=0?'+':'')+'$'+pnl.toFixed(2)+' ('+((pnl/1000)*100).toFixed(2)+'%)</span>';
+                
                 const ot=document.getElementById('openTrades');
                 if(!x.open_trades||!x.open_trades.length) ot.innerHTML='<div class="empty">Нет открытых сделок</div>';
-                else ot.innerHTML=x.open_trades.map(t=>'<div class="trade-card '+t.direction+'"><div class="trade-top"><span class="trade-symbol">'+t.symbol+'</span><span class="trade-dir '+t.direction+'">'+t.direction+' x'+t.leverage+'</span><button class="btn-short" style="padding:4px 10px;font-size:.7em" onclick="closeTrade(\''+t.id+'\')">Закрыть</button></div><div class="trade-info"><span><span class="lbl">Вход</span><span class="val">$'+(t.entry_price||0).toFixed(2)+'</span></span><span><span class="lbl">Текущая</span><span class="val">$'+(t.current_price||0).toFixed(2)+'</span></span><span><span class="lbl">Стоп</span><span class="val" style="color:#ff9800">$'+(t.stop_loss||0).toFixed(2)+'</span></span><span><span class="lbl">P&L</span><span class="val '+(t.pnl>=0?'green':'red')+'">'+(t.pnl>=0?'+':'')+'$'+(t.pnl||0).toFixed(2)+' ('+(t.pnl_percent||0).toFixed(2)+'%)</span></span></div></div>').join('');
+                else ot.innerHTML=x.open_trades.map(t=>'<div class="trade-card '+t.direction+'"><div class="trade-top"><span class="trade-symbol">'+t.symbol+'</span><span class="trade-dir '+t.direction+'">'+t.direction+' x'+t.leverage+'</span></div><div class="trade-info"><span><span class="lbl">Вход</span><span class="val">$'+(t.entry_price||0).toFixed(2)+'</span></span><span><span class="lbl">Текущая</span><span class="val">$'+(t.current_price||0).toFixed(2)+'</span></span><span><span class="lbl">Стоп</span><span class="val" style="color:#ff9800">$'+(t.stop_loss||0).toFixed(2)+'</span></span><span><span class="lbl">P&L</span><span class="val '+(t.pnl>=0?'green':'red')+'">'+(t.pnl>=0?'+':'')+'$'+(t.pnl||0).toFixed(2)+' ('+(t.pnl_percent||0).toFixed(2)+'%)</span></span></div></div>').join('');
+                
                 const hd=document.getElementById('history');
-                if(!x.closed_trades||!x.closed_trades.length) hd.innerHTML='<tr><td colspan="8" class="empty">Нет сделок</td></tr>';
-                else hd.innerHTML=x.closed_trades.map(t=>'<tr><td>'+new Date(t.close_time).toLocaleString()+'</td><td><b>'+t.symbol+'</b></td><td><span class="badge '+t.direction+'">'+t.direction+'</span></td><td>$'+(t.entry_price||0).toFixed(2)+'</td><td>$'+(t.exit_price||0).toFixed(2)+'</td><td class="'+(t.pnl>=0?'green':'red')+'">'+(t.pnl>=0?'+':'')+'$'+(t.pnl||0).toFixed(2)+'</td><td class="'+(t.pnl_percent>=0?'green':'red')+'">'+(t.pnl_percent>=0?'+':'')+(t.pnl_percent||0).toFixed(2)+'%</td><td><span class="badge '+t.status+'">'+t.status+'</span></td></tr>').join('');
+                if(!x.closed_trades||!x.closed_trades.length) hd.innerHTML='<tr><td colspan="9" class="empty">Нет сделок</td></tr>';
+                else hd.innerHTML=x.closed_trades.map(t=>'<tr><td>'+new Date(t.close_time).toLocaleString()+'</td><td><b>'+t.symbol+'</b></td><td>x'+t.leverage+'</td><td><span class="badge '+t.direction+'">'+t.direction+'</span></td><td>$'+(t.entry_price||0).toFixed(2)+'</td><td>$'+(t.exit_price||0).toFixed(2)+'</td><td class="'+(t.pnl>=0?'green':'red')+'">'+(t.pnl>=0?'+':'')+'$'+(t.pnl||0).toFixed(2)+'</td><td class="'+(t.pnl_percent>=0?'green':'red')+'">'+(t.pnl_percent>=0?'+':'')+(t.pnl_percent||0).toFixed(2)+'%</td><td><span class="badge '+t.status+'">'+t.status+'</span></td></tr>').join('');
+                
                 document.getElementById('dot').classList.remove('off');
                 document.getElementById('statusText').textContent='Онлайн';
             }
@@ -113,17 +117,6 @@
             document.getElementById('dot').classList.add('off');
             document.getElementById('statusText').textContent='Офлайн';
         });
-        function openTrade(){
-            const sym=document.getElementById('mSymbol').value;
-            db.collection('trading_state').doc('current').update({manual_trade:{symbol:sym,direction:'LONG',time:Date.now()}});
-        }
-        function openTradeShort(){
-            const sym=document.getElementById('mSymbol').value;
-            db.collection('trading_state').doc('current').update({manual_trade:{symbol:sym,direction:'SHORT',time:Date.now()}});
-        }
-        function closeTrade(id){
-            db.collection('trading_state').doc('current').update({close_trade:id});
-        }
     </script>
 </body>
 </html>
