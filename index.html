@@ -3,120 +3,790 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trading Dashboard</title>
+    <title>🤖 Liquidation Trading Bot</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
     <style>
-        *{margin:0;padding:0;box-sizing:border-box}
-        body{font-family:'Segoe UI',sans-serif;background:#0a0e27;color:#fff;min-height:100vh}
-        .container{max-width:1200px;margin:0 auto;padding:20px}
-        .header{display:flex;justify-content:space-between;align-items:center;padding:20px;background:#1a1f3a;border-radius:16px;margin-bottom:20px}
-        .header h1{background:linear-gradient(135deg,#667eea,#764ba2);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-        .dot{width:10px;height:10px;border-radius:50%;background:#4CAF50;display:inline-block}
-        .dot.off{background:#f44336}
-        .balance-card{background:linear-gradient(135deg,#667eea,#764ba2);border-radius:20px;padding:25px;margin-bottom:20px}
-        .balance{font-size:2.5em;font-weight:bold}
-        .green{color:#4CAF50}.red{color:#f44336}
-        .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
-        .stat{background:#1a1f3a;border-radius:12px;padding:14px;text-align:center}
-        .stat .label{font-size:.8em;opacity:.7}
-        .stat .value{font-size:1.2em;font-weight:bold;margin-top:3px}
-        .section{background:#1a1f3a;border-radius:16px;padding:20px;margin-bottom:20px}
-        .section h2{color:#667eea;margin-bottom:12px;font-size:1.2em}
-        .trade-card{background:#0d1128;border-radius:12px;padding:14px;margin-bottom:8px;border-left:4px solid #667eea}
-        .trade-card.LONG{border-left-color:#4CAF50}
-        .trade-card.SHORT{border-left-color:#f44336}
-        .trade-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
-        .trade-symbol{font-size:1.1em;font-weight:bold}
-        .trade-dir{padding:3px 12px;border-radius:20px;font-weight:bold;font-size:.8em}
-        .trade-dir.LONG{background:rgba(76,175,80,.2);color:#4CAF50}
-        .trade-dir.SHORT{background:rgba(244,67,54,.2);color:#f44336}
-        .trade-info{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;font-size:.9em}
-        .trade-info .lbl{font-size:.7em;opacity:.7}
-        .trade-info .val{font-weight:bold}
-        table{width:100%;border-collapse:collapse;font-size:.85em}
-        th{background:#0d1128;padding:8px;text-align:left;color:#667eea}
-        td{padding:8px;border-bottom:1px solid #2a2f4a}
-        .badge{padding:2px 8px;border-radius:12px;font-size:.75em;font-weight:bold}
-        .badge.LONG{background:rgba(76,175,80,.2);color:#4CAF50}
-        .badge.SHORT{background:rgba(244,67,54,.2);color:#f44336}
-        .badge.STOP_LOSS{background:rgba(255,152,0,.2);color:#ff9800}
-        .badge.TRAILING_STOP{background:rgba(0,188,212,.2);color:#00bcd4}
-        .badge.LIQUIDATED{background:rgba(244,67,54,.3);color:#f44336}
-        .badge.CLOSED{background:rgba(76,175,80,.2);color:#4CAF50}
-        .empty{text-align:center;padding:20px;opacity:.5}
-        .liq-signal{background:rgba(255,152,0,.15);border:1px solid #ff9800;border-radius:8px;padding:10px;margin-bottom:10px;font-size:.85em}
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: #0a0e1a;
+            color: #e0e0e0;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+        
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 25px;
+            background: linear-gradient(135deg, #1a1f3a 0%, #0f1535 100%);
+            border-radius: 16px;
+            margin-bottom: 20px;
+            border: 1px solid #2a2f5a;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+        
+        .header h1 {
+            font-size: 1.6em;
+            background: linear-gradient(135deg, #00d4ff, #7b2cbf);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9em;
+        }
+        
+        .dot {
+            width: 10px; height: 10px;
+            border-radius: 50%;
+            background: #f44336;
+            box-shadow: 0 0 8px #f44336;
+            transition: all 0.3s;
+        }
+        
+        .dot.online {
+            background: #00e676;
+            box-shadow: 0 0 8px #00e676;
+        }
+        
+        .dot.cooldown {
+            background: #ff9800;
+            box-shadow: 0 0 8px #ff9800;
+            animation: pulse 1s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+        
+        /* Balance Section */
+        .balance-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .balance-card {
+            background: linear-gradient(135deg, #1a1f3a 0%, #0f1535 100%);
+            border-radius: 16px;
+            padding: 25px;
+            border: 1px solid #2a2f5a;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .balance-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #00d4ff, #7b2cbf);
+        }
+        
+        .balance-label {
+            font-size: 0.85em;
+            color: #8892b0;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .balance-value {
+            font-size: 2.2em;
+            font-weight: 700;
+            color: #fff;
+        }
+        
+        .balance-change {
+            font-size: 1em;
+            margin-top: 8px;
+            font-weight: 600;
+        }
+        
+        .green { color: #00e676; }
+        .red { color: #ff5252; }
+        .orange { color: #ff9800; }
+        
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-box {
+            background: #1a1f3a;
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+            border: 1px solid #2a2f5a;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+        
+        .stat-box:hover {
+            transform: translateY(-2px);
+            border-color: #00d4ff;
+        }
+        
+        .stat-label {
+            font-size: 0.75em;
+            color: #8892b0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 6px;
+        }
+        
+        .stat-value {
+            font-size: 1.4em;
+            font-weight: 700;
+            color: #fff;
+        }
+        
+        /* Sections */
+        .section {
+            background: #1a1f3a;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid #2a2f5a;
+        }
+        
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        
+        .section-title {
+            font-size: 1.1em;
+            color: #00d4ff;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .section-count {
+            background: #0d1128;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            color: #8892b0;
+        }
+        
+        /* Trade Cards */
+        .trade-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .trade-card {
+            background: #0d1128;
+            border-radius: 12px;
+            padding: 16px;
+            border-left: 4px solid #00d4ff;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        
+        .trade-card:hover {
+            background: #12162e;
+            transform: translateX(4px);
+        }
+        
+        .trade-card.LONG { border-left-color: #00e676; }
+        .trade-card.SHORT { border-left-color: #ff5252; }
+        .trade-card.STOP_LOSS { border-left-color: #ff9800; }
+        .trade-card.TRAILING_STOP { border-left-color: #00bcd4; }
+        .trade-card.LIQUIDATED { border-left-color: #ff1744; }
+        
+        .trade-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        
+        .trade-symbol {
+            font-size: 1.15em;
+            font-weight: 700;
+            color: #fff;
+        }
+        
+        .trade-badges {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .badge {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.75em;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .badge.LONG { background: rgba(0,230,118,0.15); color: #00e676; }
+        .badge.SHORT { background: rgba(255,82,82,0.15); color: #ff5252; }
+        .badge.OPEN { background: rgba(0,212,255,0.15); color: #00d4ff; }
+        .badge.STOP_LOSS { background: rgba(255,152,0,0.15); color: #ff9800; }
+        .badge.TRAILING_STOP { background: rgba(0,188,212,0.15); color: #00bcd4; }
+        .badge.LIQUIDATED { background: rgba(255,23,68,0.2); color: #ff1744; }
+        .badge.CLOSED { background: rgba(0,230,118,0.15); color: #00e676; }
+        
+        .trade-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 12px;
+        }
+        
+        .detail-item {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        
+        .detail-label {
+            font-size: 0.7em;
+            color: #8892b0;
+            text-transform: uppercase;
+        }
+        
+        .detail-value {
+            font-size: 0.95em;
+            font-weight: 600;
+            color: #fff;
+        }
+        
+        .detail-value.pnl-positive { color: #00e676; }
+        .detail-value.pnl-negative { color: #ff5252; }
+        
+        /* History Table */
+        .table-wrapper {
+            overflow-x: auto;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85em;
+        }
+        
+        th {
+            background: #0d1128;
+            padding: 12px 10px;
+            text-align: left;
+            color: #00d4ff;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.75em;
+            letter-spacing: 0.5px;
+            position: sticky;
+            top: 0;
+        }
+        
+        td {
+            padding: 10px;
+            border-bottom: 1px solid #2a2f5a;
+            vertical-align: middle;
+        }
+        
+        tr:hover td {
+            background: rgba(0,212,255,0.03);
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #8892b0;
+            font-size: 0.95em;
+        }
+        
+        .empty-state .icon {
+            font-size: 3em;
+            margin-bottom: 10px;
+            opacity: 0.5;
+        }
+        
+        /* Liquidation Signals */
+        .liq-feed {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .liq-item {
+            background: rgba(255,152,0,0.08);
+            border: 1px solid rgba(255,152,0,0.2);
+            border-radius: 10px;
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            animation: slideIn 0.3s ease;
+        }
+        
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        
+        .liq-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .liq-icon {
+            font-size: 1.3em;
+        }
+        
+        .liq-amount {
+            font-weight: 700;
+            color: #ff9800;
+        }
+        
+        .liq-time {
+            font-size: 0.75em;
+            color: #8892b0;
+        }
+        
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #0a0e1a; }
+        ::-webkit-scrollbar-thumb { background: #2a2f5a; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #00d4ff; }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .balance-section { grid-template-columns: 1fr; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .trade-details { grid-template-columns: repeat(2, 1fr); }
+            .header h1 { font-size: 1.2em; }
+        }
+        
+        /* Progress bar for cooldown */
+        .cooldown-bar {
+            width: 100%;
+            height: 4px;
+            background: #2a2f5a;
+            border-radius: 2px;
+            margin-top: 8px;
+            overflow: hidden;
+        }
+        
+        .cooldown-progress {
+            height: 100%;
+            background: linear-gradient(90deg, #ff9800, #ff5252);
+            border-radius: 2px;
+            transition: width 1s linear;
+        }
     </style>
 </head>
 <body>
     <div class="container">
+        <!-- Header -->
         <div class="header">
-            <h1>🤖 Auto Trading Bot</h1>
-            <div><span class="dot" id="dot"></span> <span id="statusText">Загрузка...</span></div>
+            <h1>🤖 Liquidation Trading Bot</h1>
+            <div class="status">
+                <span class="dot" id="statusDot"></span>
+                <span id="statusText">Подключение...</span>
+            </div>
         </div>
-        <div class="balance-card">
-            <div class="balance" id="balance">$1,000</div>
-            <div id="pnlInfo"></div>
-        </div>
-        <div class="stats">
-            <div class="stat"><div class="label">Доступно</div><div class="value" id="available">$1,000</div></div>
-            <div class="stat"><div class="label">Открыто</div><div class="value" id="openCount">0</div></div>
-            <div class="stat"><div class="label">Всего сделок</div><div class="value" id="totalTrades">0</div></div>
-            <div class="stat"><div class="label">Win Rate</div><div class="value" id="winRate">0%</div></div>
-        </div>
-        <div id="liqSignals"></div>
-        <div class="section"><h2>📈 Открытые сделки</h2><div id="openTrades"><div class="empty">Нет открытых сделок</div></div></div>
-        <div class="section"><h2>📋 История сделок</h2><table><thead><tr><th>Время</th><th>Монета</th><th>Плечо</th><th>Напр.</th><th>Вход</th><th>Выход</th><th>P&L $</th><th>P&L %</th><th>Статус</th></tr></thead><tbody id="history"></tbody></table></div>
-    </div>
-    <script>
-        firebase.initializeApp({
-            apiKey:"AIzaSyDn3khNbagwGPKSkup5nv12H9n6q8mvv9g",
-            authDomain:"market-sim-350b1.firebaseapp.com",
-            projectId:"market-sim-350b1",
-            storageBucket:"market-sim-350b1.firebasestorage.app",
-            messagingSenderId:"259052430410",
-            appId:"1:259052430410:web:132cff02cf988294d032b3"
-        });
-        const db=firebase.firestore();
         
-        // Сигналы ликвидаций
-        ['BTCUSDT','ETHUSDT','SOLUSDT'].forEach(s=>{
-            db.collection('market_state').doc(s).onSnapshot(d=>{
-                if(d.exists&&d.data().last_liquidation){
-                    const l=d.data().last_liquidation;
-                    document.getElementById('liqSignals').innerHTML='<div class="liq-signal">⚡ Ликвидация '+s+': '+l.side+' $'+(l.price||0).toFixed(2)+' x '+l.quantity.toFixed(4)+'</div>';
+        <!-- Balance Section -->
+        <div class="balance-section">
+            <div class="balance-card">
+                <div class="balance-label">Текущий баланс</div>
+                <div class="balance-value" id="balance">$1,000.00</div>
+                <div class="balance-change" id="pnlChange">
+                    <span class="green">+$0.00 (0.00%)</span>
+                </div>
+            </div>
+            <div class="balance-card">
+                <div class="balance-label">Доступно для торговли</div>
+                <div class="balance-value" id="available">$1,000.00</div>
+                <div class="balance-change" id="cooldownInfo" style="display:none">
+                    <span class="orange">⏰ Кулдаун: <span id="cooldownTime">--:--</span></span>
+                    <div class="cooldown-bar"><div class="cooldown-progress" id="cooldownBar" style="width:100%"></div></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Stats -->
+        <div class="stats-grid">
+            <div class="stat-box">
+                <div class="stat-label">Открыто позиций</div>
+                <div class="stat-value" id="openCount">0</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Всего сделок</div>
+                <div class="stat-value" id="totalTrades">0</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Win Rate</div>
+                <div class="stat-value" id="winRate">0.0%</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Прибыльных</div>
+                <div class="stat-value green" id="winCount">0</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Убыточных</div>
+                <div class="stat-value red" id="lossCount">0</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Ликвидировано</div>
+                <div class="stat-value red" id="liqCount">0</div>
+            </div>
+        </div>
+        
+        <!-- Liquidation Signals -->
+        <div class="section">
+            <div class="section-header">
+                <div class="section-title">⚡ Последние ликвидации</div>
+                <div class="section-count" id="liqCountFeed">0</div>
+            </div>
+            <div class="liq-feed" id="liqFeed">
+                <div class="empty-state">
+                    <div class="icon">📡</div>
+                    Ожидание ликвидаций...
+                </div>
+            </div>
+        </div>
+        
+        <!-- Open Trades -->
+        <div class="section">
+            <div class="section-header">
+                <div class="section-title">📈 Открытые позиции</div>
+                <div class="section-count" id="openCountHeader">0</div>
+            </div>
+            <div class="trade-list" id="openTradesList">
+                <div class="empty-state">
+                    <div class="icon">📭</div>
+                    Нет открытых позиций
+                </div>
+            </div>
+        </div>
+        
+        <!-- Trade History -->
+        <div class="section">
+            <div class="section-header">
+                <div class="section-title">📋 История сделок</div>
+                <div class="section-count" id="historyCount">0</div>
+            </div>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Время открытия</th>
+                            <th>Время закрытия</th>
+                            <th>Монета</th>
+                            <th>Плечо</th>
+                            <th>Напр.</th>
+                            <th>Вход</th>
+                            <th>Выход</th>
+                            <th>Маржа</th>
+                            <th>P&L $</th>
+                            <th>P&L %</th>
+                            <th>Статус</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyTable">
+                        <tr><td colspan="11" class="empty-state"><div class="icon">📊</div>История пуста</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Firebase Config
+        const firebaseConfig = {
+            apiKey: "AIzaSyDn3khNbagwGPKSkup5nv12H9n6q8mvv9g",
+            authDomain: "market-sim-350b1.firebaseapp.com",
+            projectId: "market-sim-350b1",
+            storageBucket: "market-sim-350b1.firebasestorage.app",
+            messagingSenderId: "259052430410",
+            appId: "1:259052430410:web:132cff02cf988294d032b3"
+        };
+        
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        
+        // State
+        let state = {
+            balance: 1000,
+            available_balance: 1000,
+            open_trades: [],
+            closed_trades: [],
+            cooldown_until: 0,
+            lastUpdate: null
+        };
+        
+        // Format helpers
+        const fmtMoney = (v) => '$' + (v || 0).toFixed(2);
+        const fmtPct = (v) => (v || 0).toFixed(2) + '%';
+        const fmtTime = (iso) => {
+            if (!iso) return '--';
+            const d = new Date(iso);
+            return d.toLocaleString('ru-RU', { 
+                day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit'
+            });
+        };
+        
+        // Update UI
+        function updateUI() {
+            const x = state;
+            
+            // Balance
+            document.getElementById('balance').textContent = fmtMoney(x.balance);
+            document.getElementById('available').textContent = fmtMoney(x.available_balance);
+            
+            const pnl = (x.balance || 0) - 1000;
+            const pnlPct = ((pnl / 1000) * 100);
+            const pnlEl = document.getElementById('pnlChange');
+            pnlEl.innerHTML = `<span class="${pnl >= 0 ? 'green' : 'red'}">${pnl >= 0 ? '+' : ''}${fmtMoney(pnl)} (${pnl >= 0 ? '+' : ''}${fmtPct(pnlPct)})</span>`;
+            
+            // Stats
+            const openTrades = x.open_trades || [];
+            const closedTrades = x.closed_trades || [];
+            const allTrades = [...openTrades, ...closedTrades];
+            
+            document.getElementById('openCount').textContent = openTrades.length;
+            document.getElementById('openCountHeader').textContent = openTrades.length;
+            document.getElementById('totalTrades').textContent = allTrades.length;
+            
+            const wins = closedTrades.filter(t => (t.pnl || 0) > 0).length;
+            const losses = closedTrades.filter(t => (t.pnl || 0) < 0).length;
+            const liqs = closedTrades.filter(t => t.status === 'LIQUIDATED').length;
+            
+            document.getElementById('winCount').textContent = wins;
+            document.getElementById('lossCount').textContent = losses;
+            document.getElementById('liqCount').textContent = liqs;
+            document.getElementById('winRate').textContent = closedTrades.length > 0 
+                ? ((wins / closedTrades.length) * 100).toFixed(1) + '%' 
+                : '0.0%';
+            
+            // Cooldown
+            const now = Date.now() / 1000;
+            const cd = x.cooldown_until || 0;
+            if (cd > now) {
+                document.getElementById('cooldownInfo').style.display = 'block';
+                const remaining = cd - now;
+                const mins = Math.floor(remaining / 60);
+                const secs = Math.floor(remaining % 60);
+                document.getElementById('cooldownTime').textContent = 
+                    `${mins.toString().padStart(2,'0')}:${secs.toString().padStart(2,'0')}`;
+                const pct = (remaining / 3600) * 100;
+                document.getElementById('cooldownBar').style.width = pct + '%';
+            } else {
+                document.getElementById('cooldownInfo').style.display = 'none';
+            }
+            
+            // Open trades
+            const otList = document.getElementById('openTradesList');
+            if (openTrades.length === 0) {
+                otList.innerHTML = `
+                    <div class="empty-state">
+                        <div class="icon">📭</div>
+                        Нет открытых позиций
+                    </div>`;
+            } else {
+                otList.innerHTML = openTrades.map(t => `
+                    <div class="trade-card ${t.direction}">
+                        <div class="trade-header">
+                            <span class="trade-symbol">${t.symbol}</span>
+                            <div class="trade-badges">
+                                <span class="badge ${t.direction}">${t.direction}</span>
+                                <span class="badge OPEN">OPEN</span>
+                            </div>
+                        </div>
+                        <div class="trade-details">
+                            <div class="detail-item">
+                                <span class="detail-label">Плечо</span>
+                                <span class="detail-value">x${t.leverage}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Маржа</span>
+                                <span class="detail-value">${fmtMoney(t.margin)}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Вход</span>
+                                <span class="detail-value">${fmtMoney(t.entry_price)}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Текущая</span>
+                                <span class="detail-value">${fmtMoney(t.current_price)}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Стоп-лосс</span>
+                                <span class="detail-value" style="color:#ff9800">${fmtMoney(t.stop_loss)}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Трейлинг</span>
+                                <span class="detail-value" style="color:#00bcd4">${t.trailing_stop > 0 ? fmtMoney(t.trailing_stop) : '—'}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Комиссии</span>
+                                <span class="detail-value">${fmtMoney(t.total_fees)}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">P&L</span>
+                                <span class="detail-value ${(t.pnl || 0) >= 0 ? 'pnl-positive' : 'pnl-negative'}">
+                                    ${(t.pnl || 0) >= 0 ? '+' : ''}${fmtMoney(t.pnl)} (${(t.pnl_percent || 0).toFixed(2)}%)
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+            
+            // History
+            const histTable = document.getElementById('historyTable');
+            document.getElementById('historyCount').textContent = closedTrades.length;
+            
+            if (closedTrades.length === 0) {
+                histTable.innerHTML = `<tr><td colspan="11" class="empty-state"><div class="icon">📊</div>История пуста</td></tr>`;
+            } else {
+                // Sort by close time desc
+                const sorted = [...closedTrades].sort((a, b) => {
+                    const ta = a.close_time ? new Date(a.close_time).getTime() : 0;
+                    const tb = b.close_time ? new Date(b.close_time).getTime() : 0;
+                    return tb - ta;
+                });
+                
+                histTable.innerHTML = sorted.map(t => `
+                    <tr>
+                        <td>${fmtTime(t.open_time)}</td>
+                        <td>${fmtTime(t.close_time)}</td>
+                        <td><b>${t.symbol}</b></td>
+                        <td>x${t.leverage}</td>
+                        <td><span class="badge ${t.direction}">${t.direction}</span></td>
+                        <td>${fmtMoney(t.entry_price)}</td>
+                        <td>${fmtMoney(t.exit_price)}</td>
+                        <td>${fmtMoney(t.margin)}</td>
+                        <td class="${(t.pnl || 0) >= 0 ? 'green' : 'red'}">
+                            ${(t.pnl || 0) >= 0 ? '+' : ''}${fmtMoney(t.pnl)}
+                        </td>
+                        <td class="${(t.pnl_percent || 0) >= 0 ? 'green' : 'red'}">
+                            ${(t.pnl_percent || 0) >= 0 ? '+' : ''}${fmtPct(t.pnl_percent)}
+                        </td>
+                        <td><span class="badge ${t.status}">${t.status}</span></td>
+                    </tr>
+                `).join('');
+            }
+            
+            // Status
+            const dot = document.getElementById('statusDot');
+            const statusText = document.getElementById('statusText');
+            
+            if (x.cooldown_active || (x.cooldown_until && x.cooldown_until > Date.now()/1000)) {
+                dot.className = 'dot cooldown';
+                statusText.textContent = 'Кулдаун';
+            } else if (x.updated_at) {
+                dot.className = 'dot online';
+                statusText.textContent = 'Онлайн';
+            } else {
+                dot.className = 'dot';
+                statusText.textContent = 'Ожидание данных';
+            }
+        }
+        
+        // Listen to trading_state
+        db.collection('trading_state').doc('current').onSnapshot((doc) => {
+            if (doc.exists) {
+                const data = doc.data();
+                state = { ...state, ...data };
+                updateUI();
+            }
+        }, (err) => {
+            console.error('Firestore error:', err);
+            document.getElementById('statusDot').className = 'dot';
+            document.getElementById('statusText').textContent = 'Ошибка подключения';
+        });
+        
+        // Listen to trades_history
+        db.collection('trades_history').orderBy('saved_at', 'desc').limit(50).onSnapshot((snapshot) => {
+            const trades = [];
+            snapshot.forEach((doc) => {
+                trades.push(doc.data());
+            });
+            if (trades.length > 0) {
+                state.closed_trades = trades;
+                updateUI();
+            }
+        });
+        
+        // Listen to liquidation signals
+        const liqSymbols = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT', 'XRPUSDT'];
+        const liqFeed = document.getElementById('liqFeed');
+        let liqItems = [];
+        
+        liqSymbols.forEach(sym => {
+            db.collection('market_state').doc(sym).onSnapshot((doc) => {
+                if (doc.exists) {
+                    const data = doc.data();
+                    if (data.last_liquidation) {
+                        const l = data.last_liquidation;
+                        const item = {
+                            symbol: sym,
+                            side: l.side,
+                            price: l.price || 0,
+                            quantity: l.quantity || 0,
+                            amount: l.amount || 0,
+                            time: new Date()
+                        };
+                        liqItems.unshift(item);
+                        if (liqItems.length > 10) liqItems.pop();
+                        
+                        document.getElementById('liqCountFeed').textContent = liqItems.length;
+                        liqFeed.innerHTML = liqItems.map(i => `
+                            <div class="liq-item">
+                                <div class="liq-info">
+                                    <span class="liq-icon">⚡</span>
+                                    <div>
+                                        <div><b>${i.symbol}</b> — ${i.side} ликвидация</div>
+                                        <div class="liq-time">${i.time.toLocaleTimeString('ru-RU')}</div>
+                                    </div>
+                                </div>
+                                <div style="text-align:right">
+                                    <div class="liq-amount">$${(i.amount || 0).toFixed(0)}</div>
+                                    <div style="font-size:0.75em;color:#8892b0">${fmtMoney(i.price)}</div>
+                                </div>
+                            </div>
+                        `).join('');
+                    }
                 }
             });
         });
         
-        // Трейдинг
-        db.collection('trading_state').doc('current').onSnapshot(d=>{
-            if(d.exists){
-                const x=d.data();
-                document.getElementById('balance').textContent='$'+(x.balance||0).toFixed(2);
-                document.getElementById('available').textContent='$'+(x.available_balance||0).toFixed(2);
-                document.getElementById('openCount').textContent=x.open_count||0;
-                document.getElementById('totalTrades').textContent=x.total_trades||0;
-                const w=(x.closed_trades||[]).filter(t=>t.pnl>0).length;
-                document.getElementById('winRate').textContent=((w/(x.total_trades||1))*100).toFixed(1)+'%';
-                const pnl=(x.balance||0)-1000;
-                document.getElementById('pnlInfo').innerHTML='<span class="'+(pnl>=0?'green':'red')+'">'+(pnl>=0?'+':'')+'$'+pnl.toFixed(2)+' ('+((pnl/1000)*100).toFixed(2)+'%)</span>';
-                
-                const ot=document.getElementById('openTrades');
-                if(!x.open_trades||!x.open_trades.length) ot.innerHTML='<div class="empty">Нет открытых сделок</div>';
-                else ot.innerHTML=x.open_trades.map(t=>'<div class="trade-card '+t.direction+'"><div class="trade-top"><span class="trade-symbol">'+t.symbol+'</span><span class="trade-dir '+t.direction+'">'+t.direction+' x'+t.leverage+'</span></div><div class="trade-info"><span><span class="lbl">Вход</span><span class="val">$'+(t.entry_price||0).toFixed(2)+'</span></span><span><span class="lbl">Текущая</span><span class="val">$'+(t.current_price||0).toFixed(2)+'</span></span><span><span class="lbl">Стоп</span><span class="val" style="color:#ff9800">$'+(t.stop_loss||0).toFixed(2)+'</span></span><span><span class="lbl">P&L</span><span class="val '+(t.pnl>=0?'green':'red')+'">'+(t.pnl>=0?'+':'')+'$'+(t.pnl||0).toFixed(2)+' ('+(t.pnl_percent||0).toFixed(2)+'%)</span></span></div></div>').join('');
-                
-                const hd=document.getElementById('history');
-                if(!x.closed_trades||!x.closed_trades.length) hd.innerHTML='<tr><td colspan="9" class="empty">Нет сделок</td></tr>';
-                else hd.innerHTML=x.closed_trades.map(t=>'<tr><td>'+new Date(t.close_time).toLocaleString()+'</td><td><b>'+t.symbol+'</b></td><td>x'+t.leverage+'</td><td><span class="badge '+t.direction+'">'+t.direction+'</span></td><td>$'+(t.entry_price||0).toFixed(2)+'</td><td>$'+(t.exit_price||0).toFixed(2)+'</td><td class="'+(t.pnl>=0?'green':'red')+'">'+(t.pnl>=0?'+':'')+'$'+(t.pnl||0).toFixed(2)+'</td><td class="'+(t.pnl_percent>=0?'green':'red')+'">'+(t.pnl_percent>=0?'+':'')+(t.pnl_percent||0).toFixed(2)+'%</td><td><span class="badge '+t.status+'">'+t.status+'</span></td></tr>').join('');
-                
-                document.getElementById('dot').classList.remove('off');
-                document.getElementById('statusText').textContent='Онлайн';
+        // Update cooldown timer every second
+        setInterval(() => {
+            if (state.cooldown_until && state.cooldown_until > Date.now()/1000) {
+                updateUI();
             }
-        },()=>{
-            document.getElementById('dot').classList.add('off');
-            document.getElementById('statusText').textContent='Офлайн';
-        });
+        }, 1000);
+        
+        // Initial UI update
+        updateUI();
     </script>
 </body>
 </html>
