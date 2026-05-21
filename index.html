@@ -183,10 +183,16 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 12px;
+            margin-bottom: 8px;
         }
         
         .trade-symbol { font-size: 1.15em; font-weight: 700; }
+        
+        .trade-time {
+            font-size: 0.75em;
+            color: #8892b0;
+            margin-bottom: 12px;
+        }
         
         .trade-badges { display: flex; gap: 8px; }
         
@@ -463,6 +469,7 @@
                                 <span class="badge OPEN">OPEN</span>
                             </div>
                         </div>
+                        <div class="trade-time">🕐 Зашёл: ${fmtTime(t.open_time)}</div>
                         <div class="trade-details">
                             <div class="detail-item">
                                 <span class="detail-label">Плечо</span>
