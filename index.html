@@ -294,12 +294,12 @@
         <div class="balance-section">
             <div class="balance-card">
                 <div class="balance-label">Текущий баланс</div>
-                <div class="balance-value" id="balance">$1,000.00</div>
-                <div class="balance-change" id="pnlChange"><span class="green">+$0.00 (0.00%)</span></div>
+                <div class="balance-value" id="balance">$1000</div>
+                <div class="balance-change" id="pnlChange"><span class="green">+$0 (0%)</span></div>
             </div>
             <div class="balance-card">
                 <div class="balance-label">Доступно для торговли</div>
-                <div class="balance-value" id="available">$1,000.00</div>
+                <div class="balance-value" id="available">$1000</div>
                 <div id="cooldownInfo" style="display:none">
                     <span class="orange">⏰ Кулдаун: <span id="cooldownTime">--:--</span></span>
                     <div class="cooldown-bar"><div class="cooldown-progress" id="cooldownBar" style="width:100%"></div></div>
@@ -318,7 +318,7 @@
             </div>
             <div class="stat-box">
                 <div class="stat-label">Win Rate</div>
-                <div class="stat-value" id="winRate">0.0%</div>
+                <div class="stat-value" id="winRate">0%</div>
             </div>
             <div class="stat-box">
                 <div class="stat-label">Прибыльных</div>
@@ -376,7 +376,6 @@
     </div>
 
     <script>
-        // Firebase Config
         const firebaseConfig = {
             apiKey: "AIzaSyDn3khNbagwGPKSkup5nv12H9n6q8mvv9g",
             authDomain: "market-sim-350b1.firebaseapp.com",
@@ -397,8 +396,8 @@
             cooldown_until: 0
         };
         
-        const fmtMoney = (v) => '$' + (v || 0).toFixed(2);
-        const fmtPct = (v) => (v || 0).toFixed(2) + '%';
+        const fmtMoney = (v) => '$' + (v || 0);
+        const fmtPct = (v) => (v || 0) + '%';
         const fmtTime = (iso) => {
             if (!iso) return '--';
             const d = new Date(iso);
@@ -433,8 +432,8 @@
             document.getElementById('lossCount').textContent = losses;
             document.getElementById('liqCount').textContent = liqs;
             document.getElementById('winRate').textContent = totalClosed > 0 
-                ? ((wins / totalClosed) * 100).toFixed(1) + '%' 
-                : '0.0%';
+                ? ((wins / totalClosed) * 100) + '%' 
+                : '0%';
             
             const now = Date.now() / 1000;
             const cd = x.cooldown_until || 0;
@@ -496,7 +495,7 @@
                             <div class="detail-item">
                                 <span class="detail-label">P&L</span>
                                 <span class="detail-value ${(t.pnl || 0) >= 0 ? 'pnl-positive' : 'pnl-negative'}">
-                                    ${(t.pnl || 0) >= 0 ? '+' : ''}${fmtMoney(t.pnl)} (${(t.pnl_percent || 0).toFixed(2)}%)
+                                    ${(t.pnl || 0) >= 0 ? '+' : ''}${fmtMoney(t.pnl)} (${(t.pnl_percent || 0)}%)
                                 </span>
                             </div>
                         </div>
@@ -552,7 +551,6 @@
                 'Обновлено: ' + new Date().toLocaleTimeString('ru-RU');
         }
         
-        // Слушаем trading_state
         db.collection('trading_state').doc('current').onSnapshot((doc) => {
             if (doc.exists) {
                 const data = doc.data();
@@ -565,7 +563,6 @@
             document.getElementById('statusText').textContent = 'Ошибка подключения';
         });
         
-        // Слушаем trades_history
         db.collection('trades_history').orderBy('saved_at', 'desc').limit(100).onSnapshot((snapshot) => {
             const trades = [];
             snapshot.forEach((doc) => {
@@ -576,7 +573,6 @@
             updateUI();
         });
         
-        // Обновляем кулдаун каждую секунду
         setInterval(() => {
             if (state.cooldown_until && state.cooldown_until > Date.now()/1000) {
                 updateUI();
