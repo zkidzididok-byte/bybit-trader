@@ -3,41 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🤖 Liquidation Trading Bot</title>
+    <title>🤖 Trading Bot Dashboard</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         
         body {
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            font-family: 'Segoe UI', system-ui, sans-serif;
             background: #0a0e1a;
             color: #e0e0e0;
             min-height: 100vh;
-            overflow-x: hidden;
         }
         
         .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
         
-        /* Header */
         .header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             padding: 20px 25px;
-            background: linear-gradient(135deg, #1a1f3a 0%, #0f1535 100%);
+            background: linear-gradient(135deg, #1a1f3a, #0f1535);
             border-radius: 16px;
             margin-bottom: 20px;
             border: 1px solid #2a2f5a;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
         }
         
         .header h1 {
-            font-size: 1.6em;
+            font-size: 1.5em;
             background: linear-gradient(135deg, #00d4ff, #7b2cbf);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            background-clip: text;
         }
         
         .status {
@@ -55,23 +51,11 @@
             transition: all 0.3s;
         }
         
-        .dot.online {
-            background: #00e676;
-            box-shadow: 0 0 8px #00e676;
-        }
+        .dot.online { background: #00e676; box-shadow: 0 0 8px #00e676; }
+        .dot.cooldown { background: #ff9800; box-shadow: 0 0 8px #ff9800; animation: pulse 1s infinite; }
         
-        .dot.cooldown {
-            background: #ff9800;
-            box-shadow: 0 0 8px #ff9800;
-            animation: pulse 1s infinite;
-        }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
         
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.4; }
-        }
-        
-        /* Balance Section */
         .balance-section {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -80,7 +64,7 @@
         }
         
         .balance-card {
-            background: linear-gradient(135deg, #1a1f3a 0%, #0f1535 100%);
+            background: linear-gradient(135deg, #1a1f3a, #0f1535);
             border-radius: 16px;
             padding: 25px;
             border: 1px solid #2a2f5a;
@@ -99,7 +83,6 @@
         .balance-label {
             font-size: 0.85em;
             color: #8892b0;
-            margin-bottom: 5px;
             text-transform: uppercase;
             letter-spacing: 1px;
         }
@@ -108,6 +91,7 @@
             font-size: 2.2em;
             font-weight: 700;
             color: #fff;
+            margin-top: 5px;
         }
         
         .balance-change {
@@ -120,7 +104,6 @@
         .red { color: #ff5252; }
         .orange { color: #ff9800; }
         
-        /* Stats Grid */
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
@@ -134,12 +117,6 @@
             padding: 16px;
             text-align: center;
             border: 1px solid #2a2f5a;
-            transition: transform 0.2s, border-color 0.2s;
-        }
-        
-        .stat-box:hover {
-            transform: translateY(-2px);
-            border-color: #00d4ff;
         }
         
         .stat-label {
@@ -156,7 +133,6 @@
             color: #fff;
         }
         
-        /* Sections */
         .section {
             background: #1a1f3a;
             border-radius: 16px;
@@ -188,25 +164,13 @@
             color: #8892b0;
         }
         
-        /* Trade Cards */
-        .trade-list {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
+        .trade-list { display: flex; flex-direction: column; gap: 10px; }
         
         .trade-card {
             background: #0d1128;
             border-radius: 12px;
             padding: 16px;
             border-left: 4px solid #00d4ff;
-            transition: all 0.2s;
-            cursor: pointer;
-        }
-        
-        .trade-card:hover {
-            background: #12162e;
-            transform: translateX(4px);
         }
         
         .trade-card.LONG { border-left-color: #00e676; }
@@ -222,16 +186,9 @@
             margin-bottom: 12px;
         }
         
-        .trade-symbol {
-            font-size: 1.15em;
-            font-weight: 700;
-            color: #fff;
-        }
+        .trade-symbol { font-size: 1.15em; font-weight: 700; }
         
-        .trade-badges {
-            display: flex;
-            gap: 8px;
-        }
+        .trade-badges { display: flex; gap: 8px; }
         
         .badge {
             padding: 4px 10px;
@@ -255,31 +212,11 @@
             gap: 12px;
         }
         
-        .detail-item {
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-        }
-        
-        .detail-label {
-            font-size: 0.7em;
-            color: #8892b0;
-            text-transform: uppercase;
-        }
-        
-        .detail-value {
-            font-size: 0.95em;
-            font-weight: 600;
-            color: #fff;
-        }
-        
-        .detail-value.pnl-positive { color: #00e676; }
-        .detail-value.pnl-negative { color: #ff5252; }
-        
-        /* History Table */
-        .table-wrapper {
-            overflow-x: auto;
-        }
+        .detail-item { display: flex; flex-direction: column; gap: 2px; }
+        .detail-label { font-size: 0.7em; color: #8892b0; text-transform: uppercase; }
+        .detail-value { font-size: 0.95em; font-weight: 600; }
+        .pnl-positive { color: #00e676; }
+        .pnl-negative { color: #ff5252; }
         
         table {
             width: 100%;
@@ -295,94 +232,21 @@
             font-weight: 600;
             text-transform: uppercase;
             font-size: 0.75em;
-            letter-spacing: 0.5px;
             position: sticky;
             top: 0;
         }
         
-        td {
-            padding: 10px;
-            border-bottom: 1px solid #2a2f5a;
-            vertical-align: middle;
-        }
-        
-        tr:hover td {
-            background: rgba(0,212,255,0.03);
-        }
+        td { padding: 10px; border-bottom: 1px solid #2a2f5a; }
+        tr:hover td { background: rgba(0,212,255,0.03); }
         
         .empty-state {
             text-align: center;
-            padding: 40px 20px;
-            color: #8892b0;
-            font-size: 0.95em;
-        }
-        
-        .empty-state .icon {
-            font-size: 3em;
-            margin-bottom: 10px;
-            opacity: 0.5;
-        }
-        
-        /* Liquidation Signals */
-        .liq-feed {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            max-height: 200px;
-            overflow-y: auto;
-        }
-        
-        .liq-item {
-            background: rgba(255,152,0,0.08);
-            border: 1px solid rgba(255,152,0,0.2);
-            border-radius: 10px;
-            padding: 12px 16px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            animation: slideIn 0.3s ease;
-        }
-        
-        @keyframes slideIn {
-            from { opacity: 0; transform: translateX(-20px); }
-            to { opacity: 1; transform: translateX(0); }
-        }
-        
-        .liq-info {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .liq-icon {
-            font-size: 1.3em;
-        }
-        
-        .liq-amount {
-            font-weight: 700;
-            color: #ff9800;
-        }
-        
-        .liq-time {
-            font-size: 0.75em;
+            padding: 40px;
             color: #8892b0;
         }
         
-        /* Scrollbar */
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: #0a0e1a; }
-        ::-webkit-scrollbar-thumb { background: #2a2f5a; border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: #00d4ff; }
+        .empty-state .icon { font-size: 3em; margin-bottom: 10px; opacity: 0.5; }
         
-        /* Responsive */
-        @media (max-width: 768px) {
-            .balance-section { grid-template-columns: 1fr; }
-            .stats-grid { grid-template-columns: repeat(2, 1fr); }
-            .trade-details { grid-template-columns: repeat(2, 1fr); }
-            .header h1 { font-size: 1.2em; }
-        }
-        
-        /* Progress bar for cooldown */
         .cooldown-bar {
             width: 100%;
             height: 4px;
@@ -398,11 +262,27 @@
             border-radius: 2px;
             transition: width 1s linear;
         }
+        
+        .last-update {
+            font-size: 0.75em;
+            color: #8892b0;
+            text-align: right;
+            margin-top: 10px;
+        }
+        
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #0a0e1a; }
+        ::-webkit-scrollbar-thumb { background: #2a2f5a; border-radius: 3px; }
+        
+        @media (max-width: 768px) {
+            .balance-section { grid-template-columns: 1fr; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .trade-details { grid-template-columns: repeat(2, 1fr); }
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <!-- Header -->
         <div class="header">
             <h1>🤖 Liquidation Trading Bot</h1>
             <div class="status">
@@ -411,26 +291,22 @@
             </div>
         </div>
         
-        <!-- Balance Section -->
         <div class="balance-section">
             <div class="balance-card">
                 <div class="balance-label">Текущий баланс</div>
                 <div class="balance-value" id="balance">$1,000.00</div>
-                <div class="balance-change" id="pnlChange">
-                    <span class="green">+$0.00 (0.00%)</span>
-                </div>
+                <div class="balance-change" id="pnlChange"><span class="green">+$0.00 (0.00%)</span></div>
             </div>
             <div class="balance-card">
                 <div class="balance-label">Доступно для торговли</div>
                 <div class="balance-value" id="available">$1,000.00</div>
-                <div class="balance-change" id="cooldownInfo" style="display:none">
+                <div id="cooldownInfo" style="display:none">
                     <span class="orange">⏰ Кулдаун: <span id="cooldownTime">--:--</span></span>
                     <div class="cooldown-bar"><div class="cooldown-progress" id="cooldownBar" style="width:100%"></div></div>
                 </div>
             </div>
         </div>
         
-        <!-- Stats -->
         <div class="stats-grid">
             <div class="stat-box">
                 <div class="stat-label">Открыто позиций</div>
@@ -458,46 +334,27 @@
             </div>
         </div>
         
-        <!-- Liquidation Signals -->
-        <div class="section">
-            <div class="section-header">
-                <div class="section-title">⚡ Последние ликвидации</div>
-                <div class="section-count" id="liqCountFeed">0</div>
-            </div>
-            <div class="liq-feed" id="liqFeed">
-                <div class="empty-state">
-                    <div class="icon">📡</div>
-                    Ожидание ликвидаций...
-                </div>
-            </div>
-        </div>
-        
-        <!-- Open Trades -->
         <div class="section">
             <div class="section-header">
                 <div class="section-title">📈 Открытые позиции</div>
                 <div class="section-count" id="openCountHeader">0</div>
             </div>
             <div class="trade-list" id="openTradesList">
-                <div class="empty-state">
-                    <div class="icon">📭</div>
-                    Нет открытых позиций
-                </div>
+                <div class="empty-state"><div class="icon">📭</div>Нет открытых позиций</div>
             </div>
         </div>
         
-        <!-- Trade History -->
         <div class="section">
             <div class="section-header">
                 <div class="section-title">📋 История сделок</div>
                 <div class="section-count" id="historyCount">0</div>
             </div>
-            <div class="table-wrapper">
+            <div style="overflow-x:auto">
                 <table>
                     <thead>
                         <tr>
-                            <th>Время открытия</th>
-                            <th>Время закрытия</th>
+                            <th>Время откр.</th>
+                            <th>Время закр.</th>
                             <th>Монета</th>
                             <th>Плечо</th>
                             <th>Напр.</th>
@@ -514,6 +371,7 @@
                     </tbody>
                 </table>
             </div>
+            <div class="last-update" id="lastUpdate">Обновлено: --</div>
         </div>
     </div>
 
@@ -531,17 +389,14 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
         
-        // State
         let state = {
             balance: 1000,
             available_balance: 1000,
             open_trades: [],
             closed_trades: [],
-            cooldown_until: 0,
-            lastUpdate: null
+            cooldown_until: 0
         };
         
-        // Format helpers
         const fmtMoney = (v) => '$' + (v || 0).toFixed(2);
         const fmtPct = (v) => (v || 0).toFixed(2) + '%';
         const fmtTime = (iso) => {
@@ -552,40 +407,35 @@
             });
         };
         
-        // Update UI
         function updateUI() {
             const x = state;
             
-            // Balance
             document.getElementById('balance').textContent = fmtMoney(x.balance);
             document.getElementById('available').textContent = fmtMoney(x.available_balance);
             
             const pnl = (x.balance || 0) - 1000;
             const pnlPct = ((pnl / 1000) * 100);
-            const pnlEl = document.getElementById('pnlChange');
-            pnlEl.innerHTML = `<span class="${pnl >= 0 ? 'green' : 'red'}">${pnl >= 0 ? '+' : ''}${fmtMoney(pnl)} (${pnl >= 0 ? '+' : ''}${fmtPct(pnlPct)})</span>`;
+            document.getElementById('pnlChange').innerHTML = 
+                `<span class="${pnl >= 0 ? 'green' : 'red'}">${pnl >= 0 ? '+' : ''}${fmtMoney(pnl)} (${pnl >= 0 ? '+' : ''}${fmtPct(pnlPct)})</span>`;
             
-            // Stats
             const openTrades = x.open_trades || [];
-            const closedTrades = x.closed_trades || [];
-            const allTrades = [...openTrades, ...closedTrades];
             
             document.getElementById('openCount').textContent = openTrades.length;
             document.getElementById('openCountHeader').textContent = openTrades.length;
-            document.getElementById('totalTrades').textContent = allTrades.length;
+            document.getElementById('totalTrades').textContent = x.total_trades || 0;
             
-            const wins = closedTrades.filter(t => (t.pnl || 0) > 0).length;
-            const losses = closedTrades.filter(t => (t.pnl || 0) < 0).length;
-            const liqs = closedTrades.filter(t => t.status === 'LIQUIDATED').length;
+            const wins = (x.closed_trades || []).filter(t => (t.pnl || 0) > 0).length;
+            const losses = (x.closed_trades || []).filter(t => (t.pnl || 0) < 0).length;
+            const liqs = (x.closed_trades || []).filter(t => t.status === 'LIQUIDATED').length;
+            const totalClosed = (x.closed_trades || []).length;
             
             document.getElementById('winCount').textContent = wins;
             document.getElementById('lossCount').textContent = losses;
             document.getElementById('liqCount').textContent = liqs;
-            document.getElementById('winRate').textContent = closedTrades.length > 0 
-                ? ((wins / closedTrades.length) * 100).toFixed(1) + '%' 
+            document.getElementById('winRate').textContent = totalClosed > 0 
+                ? ((wins / totalClosed) * 100).toFixed(1) + '%' 
                 : '0.0%';
             
-            // Cooldown
             const now = Date.now() / 1000;
             const cd = x.cooldown_until || 0;
             if (cd > now) {
@@ -601,14 +451,9 @@
                 document.getElementById('cooldownInfo').style.display = 'none';
             }
             
-            // Open trades
             const otList = document.getElementById('openTradesList');
             if (openTrades.length === 0) {
-                otList.innerHTML = `
-                    <div class="empty-state">
-                        <div class="icon">📭</div>
-                        Нет открытых позиций
-                    </div>`;
+                otList.innerHTML = `<div class="empty-state"><div class="icon">📭</div>Нет открытых позиций</div>`;
             } else {
                 otList.innerHTML = openTrades.map(t => `
                     <div class="trade-card ${t.direction}">
@@ -637,7 +482,7 @@
                                 <span class="detail-value">${fmtMoney(t.current_price)}</span>
                             </div>
                             <div class="detail-item">
-                                <span class="detail-label">Стоп-лосс</span>
+                                <span class="detail-label">Стоп</span>
                                 <span class="detail-value" style="color:#ff9800">${fmtMoney(t.stop_loss)}</span>
                             </div>
                             <div class="detail-item">
@@ -659,14 +504,13 @@
                 `).join('');
             }
             
-            // History
             const histTable = document.getElementById('historyTable');
+            const closedTrades = x.closed_trades || [];
             document.getElementById('historyCount').textContent = closedTrades.length;
             
             if (closedTrades.length === 0) {
                 histTable.innerHTML = `<tr><td colspan="11" class="empty-state"><div class="icon">📊</div>История пуста</td></tr>`;
             } else {
-                // Sort by close time desc
                 const sorted = [...closedTrades].sort((a, b) => {
                     const ta = a.close_time ? new Date(a.close_time).getTime() : 0;
                     const tb = b.close_time ? new Date(b.close_time).getTime() : 0;
@@ -683,22 +527,17 @@
                         <td>${fmtMoney(t.entry_price)}</td>
                         <td>${fmtMoney(t.exit_price)}</td>
                         <td>${fmtMoney(t.margin)}</td>
-                        <td class="${(t.pnl || 0) >= 0 ? 'green' : 'red'}">
-                            ${(t.pnl || 0) >= 0 ? '+' : ''}${fmtMoney(t.pnl)}
-                        </td>
-                        <td class="${(t.pnl_percent || 0) >= 0 ? 'green' : 'red'}">
-                            ${(t.pnl_percent || 0) >= 0 ? '+' : ''}${fmtPct(t.pnl_percent)}
-                        </td>
+                        <td class="${(t.pnl || 0) >= 0 ? 'green' : 'red'}">${(t.pnl || 0) >= 0 ? '+' : ''}${fmtMoney(t.pnl)}</td>
+                        <td class="${(t.pnl_percent || 0) >= 0 ? 'green' : 'red'}">${(t.pnl_percent || 0) >= 0 ? '+' : ''}${fmtPct(t.pnl_percent)}</td>
                         <td><span class="badge ${t.status}">${t.status}</span></td>
                     </tr>
                 `).join('');
             }
             
-            // Status
             const dot = document.getElementById('statusDot');
             const statusText = document.getElementById('statusText');
             
-            if (x.cooldown_active || (x.cooldown_until && x.cooldown_until > Date.now()/1000)) {
+            if (cd > now) {
                 dot.className = 'dot cooldown';
                 statusText.textContent = 'Кулдаун';
             } else if (x.updated_at) {
@@ -708,9 +547,12 @@
                 dot.className = 'dot';
                 statusText.textContent = 'Ожидание данных';
             }
+            
+            document.getElementById('lastUpdate').textContent = 
+                'Обновлено: ' + new Date().toLocaleTimeString('ru-RU');
         }
         
-        // Listen to trading_state
+        // Слушаем trading_state
         db.collection('trading_state').doc('current').onSnapshot((doc) => {
             if (doc.exists) {
                 const data = doc.data();
@@ -723,70 +565,23 @@
             document.getElementById('statusText').textContent = 'Ошибка подключения';
         });
         
-        // Listen to trades_history
-        db.collection('trades_history').orderBy('saved_at', 'desc').limit(50).onSnapshot((snapshot) => {
+        // Слушаем trades_history
+        db.collection('trades_history').orderBy('saved_at', 'desc').limit(100).onSnapshot((snapshot) => {
             const trades = [];
             snapshot.forEach((doc) => {
                 trades.push(doc.data());
             });
-            if (trades.length > 0) {
-                state.closed_trades = trades;
-                updateUI();
-            }
+            state.closed_trades = trades;
+            state.total_trades = trades.length;
+            updateUI();
         });
         
-        // Listen to liquidation signals
-        const liqSymbols = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT', 'XRPUSDT'];
-        const liqFeed = document.getElementById('liqFeed');
-        let liqItems = [];
-        
-        liqSymbols.forEach(sym => {
-            db.collection('market_state').doc(sym).onSnapshot((doc) => {
-                if (doc.exists) {
-                    const data = doc.data();
-                    if (data.last_liquidation) {
-                        const l = data.last_liquidation;
-                        const item = {
-                            symbol: sym,
-                            side: l.side,
-                            price: l.price || 0,
-                            quantity: l.quantity || 0,
-                            amount: l.amount || 0,
-                            time: new Date()
-                        };
-                        liqItems.unshift(item);
-                        if (liqItems.length > 10) liqItems.pop();
-                        
-                        document.getElementById('liqCountFeed').textContent = liqItems.length;
-                        liqFeed.innerHTML = liqItems.map(i => `
-                            <div class="liq-item">
-                                <div class="liq-info">
-                                    <span class="liq-icon">⚡</span>
-                                    <div>
-                                        <div><b>${i.symbol}</b> — ${i.side} ликвидация</div>
-                                        <div class="liq-time">${i.time.toLocaleTimeString('ru-RU')}</div>
-                                    </div>
-                                </div>
-                                <div style="text-align:right">
-                                    <div class="liq-amount">$${(i.amount || 0).toFixed(0)}</div>
-                                    <div style="font-size:0.75em;color:#8892b0">${fmtMoney(i.price)}</div>
-                                </div>
-                            </div>
-                        `).join('');
-                    }
-                }
-            });
-        });
-        
-        // Update cooldown timer every second
+        // Обновляем кулдаун каждую секунду
         setInterval(() => {
             if (state.cooldown_until && state.cooldown_until > Date.now()/1000) {
                 updateUI();
             }
         }, 1000);
-        
-        // Initial UI update
-        updateUI();
     </script>
 </body>
 </html>
