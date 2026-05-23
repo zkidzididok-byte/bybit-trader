@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🤖 Trading Bot Dashboard</title>
+    <title>Trading Bot Dashboard</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
     <style>
@@ -52,9 +52,6 @@
         }
         
         .dot.online { background: #00e676; box-shadow: 0 0 8px #00e676; }
-        .dot.cooldown { background: #ff9800; box-shadow: 0 0 8px #ff9800; animation: pulse 1s infinite; }
-        
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
         
         .balance-section {
             display: grid;
@@ -253,22 +250,6 @@
         
         .empty-state .icon { font-size: 3em; margin-bottom: 10px; opacity: 0.5; }
         
-        .cooldown-bar {
-            width: 100%;
-            height: 4px;
-            background: #2a2f5a;
-            border-radius: 2px;
-            margin-top: 8px;
-            overflow: hidden;
-        }
-        
-        .cooldown-progress {
-            height: 100%;
-            background: linear-gradient(90deg, #ff9800, #ff5252);
-            border-radius: 2px;
-            transition: width 1s linear;
-        }
-        
         .last-update {
             font-size: 0.75em;
             color: #8892b0;
@@ -290,7 +271,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>🤖 Liquidation Trading Bot</h1>
+            <h1>Liquidation Trading Bot</h1>
             <div class="status">
                 <span class="dot" id="statusDot"></span>
                 <span id="statusText">Подключение...</span>
@@ -306,10 +287,6 @@
             <div class="balance-card">
                 <div class="balance-label">Доступно для торговли</div>
                 <div class="balance-value" id="available">$1000</div>
-                <div id="cooldownInfo" style="display:none">
-                    <span class="orange">⏰ Кулдаун: <span id="cooldownTime">--:--</span></span>
-                    <div class="cooldown-bar"><div class="cooldown-progress" id="cooldownBar" style="width:100%"></div></div>
-                </div>
             </div>
         </div>
         
@@ -342,7 +319,7 @@
         
         <div class="section">
             <div class="section-header">
-                <div class="section-title">📈 Открытые позиции</div>
+                <div class="section-title">Открытые позиции</div>
                 <div class="section-count" id="openCountHeader">0</div>
             </div>
             <div class="trade-list" id="openTradesList">
@@ -352,7 +329,7 @@
         
         <div class="section">
             <div class="section-header">
-                <div class="section-title">📋 История сделок</div>
+                <div class="section-title">История сделок</div>
                 <div class="section-count" id="historyCount">0</div>
             </div>
             <div style="overflow-x:auto">
@@ -398,12 +375,21 @@
             balance: 1000,
             available_balance: 1000,
             open_trades: [],
-            closed_trades: [],
-            cooldown_until: 0
+            closed_trades: []
         };
         
-        const fmtMoney = (v) => '$' + (v || 0);
-        const fmtPct = (v) => (v || 0) + '%';
+        // ФОРМАТИРОВАНИЕ КАК НА BYBIT
+        const fmtMoney = (v) => {
+            const num = parseFloat(v) || 0;
+            return '$' + num.toFixed(4);
+        };
+        
+        const fmtPct = (v) => {
+            const num = parseFloat(v) || 0;
+            // Как на Bybit: зелёный/красный, 2 знака после запятой, со знаком
+            return (num >= 0 ? '+' : '') + num.toFixed(2) + '%';
+        };
+        
         const fmtTime = (iso) => {
             if (!iso) return '--';
             const d = new Date(iso);
@@ -418,10 +404,10 @@
             document.getElementById('balance').textContent = fmtMoney(x.balance);
             document.getElementById('available').textContent = fmtMoney(x.available_balance);
             
-            const pnl = (x.balance || 0) - 1000;
+            const pnl = (parseFloat(x.balance) || 0) - 1000;
             const pnlPct = ((pnl / 1000) * 100);
             document.getElementById('pnlChange').innerHTML = 
-                `<span class="${pnl >= 0 ? 'green' : 'red'}">${pnl >= 0 ? '+' : ''}${fmtMoney(pnl)} (${pnl >= 0 ? '+' : ''}${fmtPct(pnlPct)})</span>`;
+                `<span class="${pnl >= 0 ? 'green' : 'red'}">${pnl >= 0 ? '+' : ''}${fmtMoney(pnl)} (${pnl >= 0 ? '+' : ''}${pnlPct.toFixed(2)}%)</span>`;
             
             const openTrades = x.open_trades || [];
             
@@ -429,8 +415,8 @@
             document.getElementById('openCountHeader').textContent = openTrades.length;
             document.getElementById('totalTrades').textContent = x.total_trades || 0;
             
-            const wins = (x.closed_trades || []).filter(t => (t.pnl || 0) > 0).length;
-            const losses = (x.closed_trades || []).filter(t => (t.pnl || 0) < 0).length;
+            const wins = (x.closed_trades || []).filter(t => (parseFloat(t.pnl) || 0) > 0).length;
+            const losses = (x.closed_trades || []).filter(t => (parseFloat(t.pnl) || 0) < 0).length;
             const liqs = (x.closed_trades || []).filter(t => t.status === 'LIQUIDATED').length;
             const totalClosed = (x.closed_trades || []).length;
             
@@ -438,23 +424,8 @@
             document.getElementById('lossCount').textContent = losses;
             document.getElementById('liqCount').textContent = liqs;
             document.getElementById('winRate').textContent = totalClosed > 0 
-                ? ((wins / totalClosed) * 100) + '%' 
+                ? ((wins / totalClosed) * 100).toFixed(1) + '%' 
                 : '0%';
-            
-            const now = Date.now() / 1000;
-            const cd = x.cooldown_until || 0;
-            if (cd > now) {
-                document.getElementById('cooldownInfo').style.display = 'block';
-                const remaining = cd - now;
-                const mins = Math.floor(remaining / 60);
-                const secs = Math.floor(remaining % 60);
-                document.getElementById('cooldownTime').textContent = 
-                    `${mins.toString().padStart(2,'0')}:${secs.toString().padStart(2,'0')}`;
-                const pct = (remaining / 3600) * 100;
-                document.getElementById('cooldownBar').style.width = pct + '%';
-            } else {
-                document.getElementById('cooldownInfo').style.display = 'none';
-            }
             
             const otList = document.getElementById('openTradesList');
             if (openTrades.length === 0) {
@@ -469,7 +440,7 @@
                                 <span class="badge OPEN">OPEN</span>
                             </div>
                         </div>
-                        <div class="trade-time">🕐 Зашёл: ${fmtTime(t.open_time)}</div>
+                        <div class="trade-time">Зашёл: ${fmtTime(t.open_time)}</div>
                         <div class="trade-details">
                             <div class="detail-item">
                                 <span class="detail-label">Плечо</span>
@@ -501,8 +472,8 @@
                             </div>
                             <div class="detail-item">
                                 <span class="detail-label">P&L</span>
-                                <span class="detail-value ${(t.pnl || 0) >= 0 ? 'pnl-positive' : 'pnl-negative'}">
-                                    ${(t.pnl || 0) >= 0 ? '+' : ''}${fmtMoney(t.pnl)} (${(t.pnl_percent || 0)}%)
+                                <span class="detail-value ${(parseFloat(t.pnl) || 0) >= 0 ? 'pnl-positive' : 'pnl-negative'}">
+                                    ${(parseFloat(t.pnl) || 0) >= 0 ? '+' : ''}${fmtMoney(t.pnl)} (${fmtPct(t.pnl_percent)})
                                 </span>
                             </div>
                         </div>
@@ -533,8 +504,8 @@
                         <td>${fmtMoney(t.entry_price)}</td>
                         <td>${fmtMoney(t.exit_price)}</td>
                         <td>${fmtMoney(t.margin)}</td>
-                        <td class="${(t.pnl || 0) >= 0 ? 'green' : 'red'}">${(t.pnl || 0) >= 0 ? '+' : ''}${fmtMoney(t.pnl)}</td>
-                        <td class="${(t.pnl_percent || 0) >= 0 ? 'green' : 'red'}">${(t.pnl_percent || 0) >= 0 ? '+' : ''}${fmtPct(t.pnl_percent)}</td>
+                        <td class="${(parseFloat(t.pnl) || 0) >= 0 ? 'green' : 'red'}">${(parseFloat(t.pnl) || 0) >= 0 ? '+' : ''}${fmtMoney(t.pnl)}</td>
+                        <td class="${(parseFloat(t.pnl_percent) || 0) >= 0 ? 'green' : 'red'}">${fmtPct(t.pnl_percent)}</td>
                         <td><span class="badge ${t.status}">${t.status}</span></td>
                     </tr>
                 `).join('');
@@ -543,10 +514,7 @@
             const dot = document.getElementById('statusDot');
             const statusText = document.getElementById('statusText');
             
-            if (cd > now) {
-                dot.className = 'dot cooldown';
-                statusText.textContent = 'Кулдаун';
-            } else if (x.updated_at) {
+            if (x.updated_at) {
                 dot.className = 'dot online';
                 statusText.textContent = 'Онлайн';
             } else {
@@ -579,12 +547,6 @@
             state.total_trades = trades.length;
             updateUI();
         });
-        
-        setInterval(() => {
-            if (state.cooldown_until && state.cooldown_until > Date.now()/1000) {
-                updateUI();
-            }
-        }, 1000);
     </script>
 </body>
 </html>
