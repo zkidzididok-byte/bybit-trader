@@ -378,7 +378,6 @@
             closed_trades: []
         };
         
-        // ФОРМАТИРОВАНИЕ КАК НА BYBIT
         const fmtMoney = (v) => {
             const num = parseFloat(v) || 0;
             return '$' + num.toFixed(4);
@@ -386,7 +385,6 @@
         
         const fmtPct = (v) => {
             const num = parseFloat(v) || 0;
-            // Как на Bybit: зелёный/красный, 2 знака после запятой, со знаком
             return (num >= 0 ? '+' : '') + num.toFixed(2) + '%';
         };
         
@@ -538,7 +536,8 @@
             document.getElementById('statusText').textContent = 'Ошибка подключения';
         });
         
-        db.collection('trades_history').orderBy('saved_at', 'desc').limit(100).onSnapshot((snapshot) => {
+        // УБРАН limit(100) — загружаем ВСЕ сделки
+        db.collection('trades_history').orderBy('saved_at', 'desc').onSnapshot((snapshot) => {
             const trades = [];
             snapshot.forEach((doc) => {
                 trades.push(doc.data());
