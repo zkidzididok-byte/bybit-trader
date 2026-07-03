@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Trading Bot Dashboard</title>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -58,10 +60,6 @@
             margin-bottom: 20px;
         }
 
-        @media (max-width: 768px) {
-            .balance-section { grid-template-columns: 1fr; }
-        }
-
         .balance-card {
             background: linear-gradient(135deg, #1a1f3a, #0f1535);
             border-radius: 16px;
@@ -111,10 +109,6 @@
             grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
             gap: 12px;
             margin-bottom: 20px;
-        }
-
-        @media (max-width: 768px) {
-            .stats-grid { grid-template-columns: repeat(2, 1fr); }
         }
 
         .stat-box {
@@ -224,10 +218,6 @@
             gap: 12px;
         }
 
-        @media (max-width: 768px) {
-            .trade-details { grid-template-columns: repeat(2, 1fr); }
-        }
-
         .detail-item { display: flex; flex-direction: column; gap: 2px; }
         .detail-label { font-size: 0.7em; color: #8892b0; text-transform: uppercase; }
         .detail-value { font-size: 0.95em; font-weight: 600; }
@@ -311,10 +301,6 @@
             margin-bottom: 20px;
         }
 
-        @media (max-width: 768px) {
-            .money-flow-grid { grid-template-columns: 1fr; }
-        }
-
         .flow-card {
             background: linear-gradient(135deg, #0d1128, #1a1f3a);
             border-radius: 14px;
@@ -377,6 +363,56 @@
 
         .flow-item-label { color: #8892b0; }
         .flow-item-value { font-weight: 600; }
+
+        .money-flow-chart {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            padding: 20px;
+            background: #0d1128;
+            border-radius: 12px;
+            margin-top: 20px;
+        }
+
+        .chart-bar {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .chart-track {
+            height: 32px;
+            background: #1a1f3a;
+            border-radius: 8px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .chart-fill {
+            height: 100%;
+            border-radius: 8px;
+            transition: width 0.5s ease;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 10px;
+            font-size: 0.75em;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .chart-fill.positive { background: linear-gradient(90deg, #00e676, #00d4ff); }
+        .chart-fill.negative { background: linear-gradient(90deg, #ff5252, #ff9800); }
+
+        .chart-label {
+            font-size: 0.85em;
+            color: #8892b0;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .chart-label strong { color: #e0e0e0; }
 
         .sankey-flow {
             display: flex;
@@ -450,7 +486,9 @@
         .sankey-net-label { color: #8892b0; }
         .sankey-net-value { font-size: 1.3em; }
 
-        .per-trade-breakdown { margin-top: 20px; }
+        .per-trade-breakdown {
+            margin-top: 20px;
+        }
 
         .per-trade-row {
             display: grid;
@@ -460,11 +498,6 @@
             border-bottom: 1px solid #2a2f5a;
             align-items: center;
             font-size: 0.85em;
-        }
-
-        @media (max-width: 768px) {
-            .per-trade-row { grid-template-columns: 60px 60px 1fr 1fr; }
-            .per-trade-row .hide-mobile { display: none; }
         }
 
         .per-trade-row.header {
@@ -480,27 +513,56 @@
 
         .per-trade-symbol { font-weight: 700; }
         .per-trade-dir { font-size: 0.75em; }
+
+        .progress-bar-wrap {
+            height: 6px;
+            background: #1a1f3a;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 4px;
+        }
+
+        .progress-bar {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.5s ease;
+        }
+
+        .progress-bar.fees { background: #ff9800; }
+        .progress-bar.funding { background: #00bcd4; }
+        .progress-bar.pnl { background: #00e676; }
+        .progress-bar.loss { background: #ff5252; }
+
+        @media (max-width: 768px) {
+            .balance-section { grid-template-columns: 1fr; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .trade-details { grid-template-columns: repeat(2, 1fr); }
+            .money-flow-grid { grid-template-columns: 1fr; }
+            .per-trade-row { grid-template-columns: 60px 60px 1fr 1fr; }
+            .per-trade-row .hide-mobile { display: none; }
+        }
     </style>
+<base target="_blank">
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>🚀 Trading Bot Dashboard</h1>
+            <h1>Liquidation Trading Bot</h1>
             <div class="status">
                 <span class="dot" id="statusDot"></span>
-                <span id="statusText">Ожидание данных...</span>
+                <span id="statusText">Подключение...</span>
             </div>
         </div>
 
         <div class="balance-section">
             <div class="balance-card">
-                <div class="balance-label">💰 Текущий баланс</div>
-                <div class="balance-value" id="balance">$1000.00</div>
-                <div class="balance-change" id="pnlChange"><span class="green">+$0.00 (0.00%)</span></div>
+                <div class="balance-label">Текущий баланс</div>
+                <div class="balance-value" id="balance">$1000</div>
+                <div class="balance-change" id="pnlChange"><span class="green">+$0 (0%)</span></div>
             </div>
             <div class="balance-card">
-                <div class="balance-label">📊 Доступно для торговли</div>
-                <div class="balance-value" id="available">$1000.00</div>
+                <div class="balance-label">Доступно для торговли</div>
+                <div class="balance-value" id="available">$1000</div>
             </div>
         </div>
 
@@ -541,7 +603,7 @@
         <div id="tab-trades" class="tab-content active">
             <div class="section">
                 <div class="section-header">
-                    <div class="section-title">🔓 Открытые позиции</div>
+                    <div class="section-title">Открытые позиции</div>
                     <div class="section-count" id="openCountHeader">0</div>
                 </div>
                 <div class="trade-list" id="openTradesList">
@@ -551,7 +613,7 @@
 
             <div class="section">
                 <div class="section-header">
-                    <div class="section-title">📜 История сделок</div>
+                    <div class="section-title">История сделок</div>
                     <div class="section-count" id="historyCount">0</div>
                 </div>
                 <div style="overflow-x:auto">
@@ -590,64 +652,64 @@
                 <div class="money-flow-grid">
                     <div class="flow-card fees">
                         <div class="flow-label">🔴 Комиссии (всего)</div>
-                        <div class="flow-value red" id="totalFees">$0.00</div>
-                        <div class="flow-sub">Вход + выход</div>
+                        <div class="flow-value red" id="totalFees">$0</div>
+                        <div class="flow-sub">Вход + выход + открытие + закрытие</div>
                         <div class="flow-breakdown">
                             <div class="flow-item">
                                 <span class="flow-item-label">Вход</span>
-                                <span class="flow-item-value orange" id="feesEntry">$0.00</span>
+                                <span class="flow-item-value orange" id="feesEntry">$0</span>
                             </div>
                             <div class="flow-item">
                                 <span class="flow-item-label">Выход</span>
-                                <span class="flow-item-value orange" id="feesExit">$0.00</span>
+                                <span class="flow-item-value orange" id="feesExit">$0</span>
                             </div>
                             <div class="flow-item">
-                                <span class="flow-item-label">Открытые</span>
-                                <span class="flow-item-value orange" id="feesOpen">$0.00</span>
+                                <span class="flow-item-label">Открытие</span>
+                                <span class="flow-item-value orange" id="feesOpen">$0</span>
                             </div>
                             <div class="flow-item">
-                                <span class="flow-item-label">Закрытые</span>
-                                <span class="flow-item-value orange" id="feesClose">$0.00</span>
+                                <span class="flow-item-label">Закрытие</span>
+                                <span class="flow-item-value orange" id="feesClose">$0</span>
                             </div>
                         </div>
                     </div>
 
                     <div class="flow-card funding">
                         <div class="flow-label">🔵 Фандинг (всего)</div>
-                        <div class="flow-value cyan" id="totalFunding">$0.00</div>
+                        <div class="flow-value cyan" id="totalFunding">$0</div>
                         <div class="flow-sub">Накопленный фандинг по всем сделкам</div>
                         <div class="flow-breakdown">
                             <div class="flow-item">
                                 <span class="flow-item-label">Положительный</span>
-                                <span class="flow-item-value green" id="fundingPositive">$0.00</span>
+                                <span class="flow-item-value green" id="fundingPositive">$0</span>
                             </div>
                             <div class="flow-item">
                                 <span class="flow-item-label">Отрицательный</span>
-                                <span class="flow-item-value red" id="fundingNegative">$0.00</span>
+                                <span class="flow-item-value red" id="fundingNegative">$0</span>
                             </div>
                             <div class="flow-item">
                                 <span class="flow-item-label">Открытые</span>
-                                <span class="flow-item-value" id="fundingOpen">$0.00</span>
+                                <span class="flow-item-value" id="fundingOpen">$0</span>
                             </div>
                             <div class="flow-item">
                                 <span class="flow-item-label">Закрытые</span>
-                                <span class="flow-item-value" id="fundingClosed">$0.00</span>
+                                <span class="flow-item-value" id="fundingClosed">$0</span>
                             </div>
                         </div>
                     </div>
 
                     <div class="flow-card floating">
                         <div class="flow-label">🟣 Плавающая прибыль</div>
-                        <div class="flow-value purple" id="totalFloating">$0.00</div>
+                        <div class="flow-value purple" id="totalFloating">$0</div>
                         <div class="flow-sub">Нереализованный P&L открытых позиций</div>
                         <div class="flow-breakdown">
                             <div class="flow-item">
                                 <span class="flow-item-label">Прибыль</span>
-                                <span class="flow-item-value green" id="floatingProfit">$0.00</span>
+                                <span class="flow-item-value green" id="floatingProfit">$0</span>
                             </div>
                             <div class="flow-item">
                                 <span class="flow-item-label">Убыток</span>
-                                <span class="flow-item-value red" id="floatingLoss">$0.00</span>
+                                <span class="flow-item-value red" id="floatingLoss">$0</span>
                             </div>
                             <div class="flow-item">
                                 <span class="flow-item-label">Всего позиций</span>
@@ -655,23 +717,23 @@
                             </div>
                             <div class="flow-item">
                                 <span class="flow-item-label">Средняя</span>
-                                <span class="flow-item-value" id="floatingAvg">$0.00</span>
+                                <span class="flow-item-value" id="floatingAvg">$0</span>
                             </div>
                         </div>
                     </div>
 
                     <div class="flow-card closed">
                         <div class="flow-label">🟢 Реализованная прибыль</div>
-                        <div class="flow-value green" id="totalClosedPnl">$0.00</div>
+                        <div class="flow-value green" id="totalClosedPnl">$0</div>
                         <div class="flow-sub">P&L закрытых сделок (без комиссий и фандинга)</div>
                         <div class="flow-breakdown">
                             <div class="flow-item">
                                 <span class="flow-item-label">Прибыль</span>
-                                <span class="flow-item-value green" id="closedProfit">$0.00</span>
+                                <span class="flow-item-value green" id="closedProfit">$0</span>
                             </div>
                             <div class="flow-item">
                                 <span class="flow-item-label">Убыток</span>
-                                <span class="flow-item-value red" id="closedLoss">$0.00</span>
+                                <span class="flow-item-value red" id="closedLoss">$0</span>
                             </div>
                             <div class="flow-item">
                                 <span class="flow-item-label">Всего закрыто</span>
@@ -679,7 +741,7 @@
                             </div>
                             <div class="flow-item">
                                 <span class="flow-item-label">Средняя</span>
-                                <span class="flow-item-value" id="closedAvg">$0.00</span>
+                                <span class="flow-item-value" id="closedAvg">$0</span>
                             </div>
                         </div>
                     </div>
@@ -694,47 +756,47 @@
                         <div class="sankey-row">
                             <div class="sankey-label">Начальный баланс</div>
                             <div class="sankey-bar-wrap">
-                                <div class="sankey-bar income" id="sankeyStart" style="width: 100%">$1000.00</div>
+                                <div class="sankey-bar income" id="sankeyStart" style="width: 100%">$1000</div>
                             </div>
-                            <div class="sankey-value" id="sankeyStartVal">$1000.00</div>
+                            <div class="sankey-value" id="sankeyStartVal">$1000</div>
                         </div>
                         <div class="sankey-divider"></div>
                         <div class="sankey-row">
                             <div class="sankey-label">+ Реализованная прибыль</div>
                             <div class="sankey-bar-wrap">
-                                <div class="sankey-bar income" id="sankeyClosedPnl" style="width: 0%">$0.00</div>
+                                <div class="sankey-bar income" id="sankeyClosedPnl" style="width: 0%">$0</div>
                             </div>
-                            <div class="sankey-value green" id="sankeyClosedPnlVal">$0.00</div>
+                            <div class="sankey-value green" id="sankeyClosedPnlVal">$0</div>
                         </div>
                         <div class="sankey-row">
                             <div class="sankey-label">+ Плавающая прибыль</div>
                             <div class="sankey-bar-wrap">
-                                <div class="sankey-bar neutral" id="sankeyFloating" style="width: 0%">$0.00</div>
+                                <div class="sankey-bar neutral" id="sankeyFloating" style="width: 0%">$0</div>
                             </div>
-                            <div class="sankey-value purple" id="sankeyFloatingVal">$0.00</div>
+                            <div class="sankey-value purple" id="sankeyFloatingVal">$0</div>
                         </div>
                         <div class="sankey-row">
                             <div class="sankey-label">− Комиссии</div>
                             <div class="sankey-bar-wrap">
-                                <div class="sankey-bar expense" id="sankeyFees" style="width: 0%">$0.00</div>
+                                <div class="sankey-bar expense" id="sankeyFees" style="width: 0%">$0</div>
                             </div>
-                            <div class="sankey-value red" id="sankeyFeesVal">$0.00</div>
+                            <div class="sankey-value red" id="sankeyFeesVal">$0</div>
                         </div>
                         <div class="sankey-row">
                             <div class="sankey-label">− Фандинг</div>
                             <div class="sankey-bar-wrap">
-                                <div class="sankey-bar expense" id="sankeyFunding" style="width: 0%">$0.00</div>
+                                <div class="sankey-bar expense" id="sankeyFunding" style="width: 0%">$0</div>
                             </div>
-                            <div class="sankey-value red" id="sankeyFundingVal">$0.00</div>
+                            <div class="sankey-value red" id="sankeyFundingVal">$0</div>
                         </div>
                         <div class="sankey-divider"></div>
                         <div class="sankey-net">
                             <span class="sankey-net-label">ИТОГО ТЕКУЩИЙ БАЛАНС</span>
-                            <span class="sankey-net-value" id="sankeyNet">$1000.00</span>
+                            <span class="sankey-net-value" id="sankeyNet">$1000</span>
                         </div>
                         <div class="sankey-net" style="border-top: none; padding-top: 0;">
                             <span class="sankey-net-label">Дрейф (баланс − расчёт)</span>
-                            <span class="sankey-net-value" id="sankeyDrift" style="color: #8892b0;">$0.00</span>
+                            <span class="sankey-net-value" id="sankeyDrift" style="color: #8892b0;">$0</span>
                         </div>
                     </div>
                 </div>
@@ -764,10 +826,35 @@
     </div>
 
     <script>
-        // ============ FORMATTERS ============
-        const fmtMoney = (v) => '$' + (parseFloat(v) || 0).toFixed(4);
-        const fmtMoney2 = (v) => '$' + (parseFloat(v) || 0).toFixed(2);
-        const fmtPct = (v) => ((parseFloat(v) || 0) >= 0 ? '+' : '') + (parseFloat(v) || 0).toFixed(2) + '%';
+        const firebaseConfig = {
+            apiKey: "AIzaSyDn3khNbagwGPKSkup5nv12H9n6q8mvv9g",
+            authDomain: "market-sim-350b1.firebaseapp.com",
+            projectId: "market-sim-350b1",
+            storageBucket: "market-sim-350b1.firebasestorage.app",
+            messagingSenderId: "259052430410",
+            appId: "1:259052430410:web:132cff02cf988294d032b3"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        let state = {
+            balance: 1000,
+            available_balance: 1000,
+            open_trades: [],
+            closed_trades: []
+        };
+
+        const fmtMoney = (v) => {
+            const num = parseFloat(v) || 0;
+            return '$' + num.toFixed(4);
+        };
+
+        const fmtPct = (v) => {
+            const num = parseFloat(v) || 0;
+            return (num >= 0 ? '+' : '') + num.toFixed(2) + '%';
+        };
+
         const fmtTime = (iso) => {
             if (!iso) return '--';
             const d = new Date(iso);
@@ -783,74 +870,200 @@
             document.getElementById(`tab-${tab}`).classList.add('active');
         }
 
-        // ============ LOAD DATA FROM JSON FILES ============
-        async function loadJSON(filename) {
-            try {
-                const response = await fetch(filename + '?t=' + Date.now());
-                if (!response.ok) return null;
-                return await response.json();
-            } catch (e) {
-                return null;
-            }
+        // ======== MONEY FLOW CALCULATIONS ========
+        function calcMoneyFlow() {
+            const openTrades = state.open_trades || [];
+            const closedTrades = state.closed_trades || [];
+            const allTrades = [...openTrades, ...closedTrades];
+
+            // FEES
+            let totalFees = 0;
+            let feesEntry = 0, feesExit = 0, feesOpen = 0, feesClose = 0;
+
+            allTrades.forEach(t => {
+                const entryFee = parseFloat(t.entry_fee) || parseFloat(t.fee_open) || 0;
+                const exitFee = parseFloat(t.exit_fee) || parseFloat(t.fee_close) || 0;
+                const openFee = parseFloat(t.open_fee) || 0;
+                const closeFee = parseFloat(t.close_fee) || 0;
+                const totalFee = parseFloat(t.total_fees) || (entryFee + exitFee + openFee + closeFee);
+
+                totalFees += totalFee;
+                feesEntry += entryFee;
+                feesExit += exitFee;
+                feesOpen += openFee;
+                feesClose += closeFee;
+            });
+
+            // FUNDING
+            let totalFunding = 0;
+            let fundingPositive = 0, fundingNegative = 0;
+            let fundingOpen = 0, fundingClosed = 0;
+
+            allTrades.forEach(t => {
+                const funding = parseFloat(t.funding_paid) || parseFloat(t.total_funding) || 0;
+                totalFunding += funding;
+
+                if (funding > 0) fundingPositive += funding;
+                if (funding < 0) fundingNegative += funding;
+
+                if (t.status === 'OPEN') fundingOpen += funding;
+                else fundingClosed += funding;
+            });
+
+            // FLOATING P&L
+            let totalFloating = 0;
+            let floatingProfit = 0, floatingLoss = 0;
+
+            openTrades.forEach(t => {
+                const pnl = parseFloat(t.pnl) || 0;
+                totalFloating += pnl;
+                if (pnl > 0) floatingProfit += pnl;
+                if (pnl < 0) floatingLoss += pnl;
+            });
+
+            // CLOSED P&L
+            let totalClosedPnl = 0;
+            let closedProfit = 0, closedLoss = 0;
+
+            closedTrades.forEach(t => {
+                const pnl = parseFloat(t.pnl) || 0;
+                totalClosedPnl += pnl;
+                if (pnl > 0) closedProfit += pnl;
+                if (pnl < 0) closedLoss += pnl;
+            });
+
+            return {
+                totalFees, feesEntry, feesExit, feesOpen, feesClose,
+                totalFunding, fundingPositive, fundingNegative, fundingOpen, fundingClosed,
+                totalFloating, floatingProfit, floatingLoss, floatingCount: openTrades.length,
+                totalClosedPnl, closedProfit, closedLoss, closedCount: closedTrades.length
+            };
         }
 
-        async function refreshData() {
-            const [stateData, tradesData] = await Promise.all([
-                loadJSON('bot_state.json'),
-                loadJSON('trades_history.json')
-            ]);
+        function updateMoneyFlow() {
+            const flow = calcMoneyFlow();
 
-            const dot = document.getElementById('statusDot');
-            const statusText = document.getElementById('statusText');
+            // Update cards
+            document.getElementById('totalFees').textContent = fmtMoney(flow.totalFees);
+            document.getElementById('feesEntry').textContent = fmtMoney(flow.feesEntry);
+            document.getElementById('feesExit').textContent = fmtMoney(flow.feesExit);
+            document.getElementById('feesOpen').textContent = fmtMoney(flow.feesOpen);
+            document.getElementById('feesClose').textContent = fmtMoney(flow.feesClose);
 
-            if (stateData) {
-                dot.className = 'dot online';
-                statusText.textContent = 'Онлайн';
-                updateUI(stateData, tradesData || []);
+            document.getElementById('totalFunding').textContent = fmtMoney(flow.totalFunding);
+            document.getElementById('fundingPositive').textContent = fmtMoney(flow.fundingPositive);
+            document.getElementById('fundingNegative').textContent = fmtMoney(flow.fundingNegative);
+            document.getElementById('fundingOpen').textContent = fmtMoney(flow.fundingOpen);
+            document.getElementById('fundingClosed').textContent = fmtMoney(flow.fundingClosed);
+
+            document.getElementById('totalFloating').textContent = fmtMoney(flow.totalFloating);
+            document.getElementById('floatingProfit').textContent = fmtMoney(flow.floatingProfit);
+            document.getElementById('floatingLoss').textContent = fmtMoney(flow.floatingLoss);
+            document.getElementById('floatingCount').textContent = flow.floatingCount;
+            document.getElementById('floatingAvg').textContent = flow.floatingCount > 0 ? fmtMoney(flow.totalFloating / flow.floatingCount) : '$0';
+
+            document.getElementById('totalClosedPnl').textContent = fmtMoney(flow.totalClosedPnl);
+            document.getElementById('closedProfit').textContent = fmtMoney(flow.closedProfit);
+            document.getElementById('closedLoss').textContent = fmtMoney(flow.closedLoss);
+            document.getElementById('closedCount').textContent = flow.closedCount;
+            document.getElementById('closedAvg').textContent = flow.closedCount > 0 ? fmtMoney(flow.totalClosedPnl / flow.closedCount) : '$0';
+
+            // Sankey
+            const startBalance = 1000;
+            const currentBalance = parseFloat(state.balance) || 1000;
+            const maxBar = Math.max(startBalance, Math.abs(flow.totalClosedPnl), Math.abs(flow.totalFloating), Math.abs(flow.totalFees), Math.abs(flow.totalFunding), currentBalance);
+
+            const pct = (v) => Math.min(100, Math.max(0, (Math.abs(v) / maxBar) * 100));
+
+            document.getElementById('sankeyStart').style.width = pct(startBalance) + '%';
+            document.getElementById('sankeyStart').textContent = fmtMoney(startBalance);
+            document.getElementById('sankeyStartVal').textContent = fmtMoney(startBalance);
+
+            document.getElementById('sankeyClosedPnl').style.width = pct(flow.totalClosedPnl) + '%';
+            document.getElementById('sankeyClosedPnl').textContent = fmtMoney(flow.totalClosedPnl);
+            document.getElementById('sankeyClosedPnlVal').textContent = fmtMoney(flow.totalClosedPnl);
+            document.getElementById('sankeyClosedPnlVal').className = 'sankey-value ' + (flow.totalClosedPnl >= 0 ? 'green' : 'red');
+
+            document.getElementById('sankeyFloating').style.width = pct(flow.totalFloating) + '%';
+            document.getElementById('sankeyFloating').textContent = fmtMoney(flow.totalFloating);
+            document.getElementById('sankeyFloatingVal').textContent = fmtMoney(flow.totalFloating);
+            document.getElementById('sankeyFloatingVal').className = 'sankey-value ' + (flow.totalFloating >= 0 ? 'purple' : 'red');
+
+            document.getElementById('sankeyFees').style.width = pct(flow.totalFees) + '%';
+            document.getElementById('sankeyFees').textContent = fmtMoney(flow.totalFees);
+            document.getElementById('sankeyFeesVal').textContent = fmtMoney(flow.totalFees);
+
+            document.getElementById('sankeyFunding').style.width = pct(Math.abs(flow.totalFunding)) + '%';
+            document.getElementById('sankeyFunding').textContent = fmtMoney(flow.totalFunding);
+            document.getElementById('sankeyFundingVal').textContent = fmtMoney(flow.totalFunding);
+
+            document.getElementById('sankeyNet').textContent = fmtMoney(currentBalance);
+            document.getElementById('sankeyNet').className = 'sankey-net-value ' + (currentBalance >= startBalance ? 'green' : 'red');
+
+            const calculated = startBalance + flow.totalClosedPnl + flow.totalFloating - flow.totalFees - flow.totalFunding;
+            const drift = currentBalance - calculated;
+            document.getElementById('sankeyDrift').textContent = fmtMoney(drift);
+            document.getElementById('sankeyDrift').style.color = Math.abs(drift) < 0.01 ? '#00e676' : '#ff9800';
+
+            // Per-trade breakdown
+            const allTrades = [...(state.open_trades || []), ...(state.closed_trades || [])];
+            const perTradeDiv = document.getElementById('perTradeBreakdown');
+
+            if (allTrades.length === 0) {
+                perTradeDiv.innerHTML = `<div class="empty-state" style="padding: 30px;"><div class="icon">📊</div>Нет данных</div>`;
             } else {
-                dot.className = 'dot';
-                statusText.textContent = 'Нет данных (бот не запущен?)';
-                // Показываем хоть что-то из trades_history если есть
-                if (tradesData) {
-                    updateUI(null, tradesData);
-                }
-            }
+                const maxAbsTotal = Math.max(...allTrades.map(t => {
+                    const pnl = parseFloat(t.pnl) || 0;
+                    const fees = parseFloat(t.total_fees) || 0;
+                    const funding = parseFloat(t.funding_paid) || parseFloat(t.total_funding) || 0;
+                    return Math.abs(pnl + fees + funding);
+                }), 0.01);
 
-            document.getElementById('lastUpdate').textContent = 
-                'Обновлено: ' + new Date().toLocaleTimeString('ru-RU');
+                perTradeDiv.innerHTML = allTrades.map(t => {
+                    const pnl = parseFloat(t.pnl) || 0;
+                    const fees = parseFloat(t.total_fees) || (parseFloat(t.entry_fee) || 0) + (parseFloat(t.exit_fee) || 0) + (parseFloat(t.open_fee) || 0) + (parseFloat(t.close_fee) || 0);
+                    const funding = parseFloat(t.funding_paid) || parseFloat(t.total_funding) || 0;
+                    const total = pnl + fees + funding;
+                    const margin = parseFloat(t.margin) || 10;
+                    const pctOfMargin = (total / margin) * 100;
+
+                    return `
+                        <div class="per-trade-row">
+                            <div class="per-trade-symbol">${t.symbol}</div>
+                            <div class="per-trade-dir"><span class="badge ${t.direction}">${t.direction}</span></div>
+                            <div class="hide-mobile orange">${fmtMoney(fees)}</div>
+                            <div class="hide-mobile cyan">${fmtMoney(funding)}</div>
+                            <div class="${pnl >= 0 ? 'green' : 'red'}">${pnl >= 0 ? '+' : ''}${fmtMoney(pnl)}</div>
+                            <div class="hide-mobile ${total >= 0 ? 'green' : 'red'}">${total >= 0 ? '+' : ''}${fmtMoney(total)}</div>
+                            <div class="hide-mobile ${total >= 0 ? 'green' : 'red'}">${fmtPct(pctOfMargin)}</div>
+                        </div>
+                    `;
+                }).join('');
+            }
         }
 
-        function updateUI(stateData, allTrades) {
-            const openTrades = allTrades.filter(t => t.status === 'OPEN');
-            const closedTrades = allTrades.filter(t => t.status !== 'OPEN');
+        function updateUI() {
+            const x = state;
 
-            // Если есть state, используем его баланс, иначе считаем из сделок
-            let balance = 1000;
-            let availableBalance = 1000;
+            document.getElementById('balance').textContent = fmtMoney(x.balance);
+            document.getElementById('available').textContent = fmtMoney(x.available_balance);
 
-            if (stateData) {
-                balance = parseFloat(stateData.balance) || 1000;
-                availableBalance = parseFloat(stateData.available_balance) || 1000;
-            }
-
-            // Баланс
-            document.getElementById('balance').textContent = fmtMoney2(balance);
-            document.getElementById('available').textContent = fmtMoney2(availableBalance);
-
-            const pnl = balance - 1000;
-            const pnlPct = (pnl / 1000) * 100;
+            const pnl = (parseFloat(x.balance) || 0) - 1000;
+            const pnlPct = ((pnl / 1000) * 100);
             document.getElementById('pnlChange').innerHTML = 
-                `<span class="${pnl >= 0 ? 'green' : 'red'}">${pnl >= 0 ? '+' : ''}${fmtMoney2(pnl)} (${pnl >= 0 ? '+' : ''}${pnlPct.toFixed(2)}%)</span>`;
+                `<span class="${pnl >= 0 ? 'green' : 'red'}">${pnl >= 0 ? '+' : ''}${fmtMoney(pnl)} (${pnl >= 0 ? '+' : ''}${pnlPct.toFixed(2)}%)</span>`;
 
-            // Статистика
-            const wins = closedTrades.filter(t => (parseFloat(t.pnl) || 0) > 0).length;
-            const losses = closedTrades.filter(t => (parseFloat(t.pnl) || 0) <= 0).length;
-            const liqs = closedTrades.filter(t => t.status === 'LIQUIDATED').length;
-            const totalClosed = closedTrades.length;
+            const openTrades = x.open_trades || [];
 
             document.getElementById('openCount').textContent = openTrades.length;
             document.getElementById('openCountHeader').textContent = openTrades.length;
-            document.getElementById('totalTrades').textContent = totalClosed;
+            document.getElementById('totalTrades').textContent = x.total_trades || 0;
+
+            const wins = (x.closed_trades || []).filter(t => (parseFloat(t.pnl) || 0) > 0).length;
+            const losses = (x.closed_trades || []).filter(t => (parseFloat(t.pnl) || 0) < 0).length;
+            const liqs = (x.closed_trades || []).filter(t => t.status === 'LIQUIDATED').length;
+            const totalClosed = (x.closed_trades || []).length;
+
             document.getElementById('winCount').textContent = wins;
             document.getElementById('lossCount').textContent = losses;
             document.getElementById('liqCount').textContent = liqs;
@@ -858,7 +1071,6 @@
                 ? ((wins / totalClosed) * 100).toFixed(1) + '%' 
                 : '0%';
 
-            // Открытые позиции
             const otList = document.getElementById('openTradesList');
             if (openTrades.length === 0) {
                 otList.innerHTML = `<div class="empty-state"><div class="icon">📭</div>Нет открытых позиций</div>`;
@@ -880,7 +1092,7 @@
                             </div>
                             <div class="detail-item">
                                 <span class="detail-label">Маржа</span>
-                                <span class="detail-value">${fmtMoney2(t.margin)}</span>
+                                <span class="detail-value">${fmtMoney(t.margin)}</span>
                             </div>
                             <div class="detail-item">
                                 <span class="detail-label">Вход</span>
@@ -900,12 +1112,12 @@
                             </div>
                             <div class="detail-item">
                                 <span class="detail-label">Комиссии</span>
-                                <span class="detail-value">${fmtMoney2(t.total_fees)}</span>
+                                <span class="detail-value">${fmtMoney(t.total_fees)}</span>
                             </div>
                             <div class="detail-item">
                                 <span class="detail-label">P&L</span>
                                 <span class="detail-value ${(parseFloat(t.pnl) || 0) >= 0 ? 'pnl-positive' : 'pnl-negative'}">
-                                    ${(parseFloat(t.pnl) || 0) >= 0 ? '+' : ''}${fmtMoney2(t.pnl)} (${fmtPct(t.pnl_percent)})
+                                    ${(parseFloat(t.pnl) || 0) >= 0 ? '+' : ''}${fmtMoney(t.pnl)} (${fmtPct(t.pnl_percent)})
                                 </span>
                             </div>
                         </div>
@@ -913,8 +1125,8 @@
                 `).join('');
             }
 
-            // История
             const histTable = document.getElementById('historyTable');
+            const closedTrades = x.closed_trades || [];
             document.getElementById('historyCount').textContent = closedTrades.length;
 
             if (closedTrades.length === 0) {
@@ -935,154 +1147,53 @@
                         <td><span class="badge ${t.direction}">${t.direction}</span></td>
                         <td>${fmtMoney(t.entry_price)}</td>
                         <td>${fmtMoney(t.exit_price)}</td>
-                        <td>${fmtMoney2(t.margin)}</td>
-                        <td class="${(parseFloat(t.pnl) || 0) >= 0 ? 'green' : 'red'}">${(parseFloat(t.pnl) || 0) >= 0 ? '+' : ''}${fmtMoney2(t.pnl)}</td>
+                        <td>${fmtMoney(t.margin)}</td>
+                        <td class="${(parseFloat(t.pnl) || 0) >= 0 ? 'green' : 'red'}">${(parseFloat(t.pnl) || 0) >= 0 ? '+' : ''}${fmtMoney(t.pnl)}</td>
                         <td class="${(parseFloat(t.pnl_percent) || 0) >= 0 ? 'green' : 'red'}">${fmtPct(t.pnl_percent)}</td>
                         <td><span class="badge ${t.status}">${t.status}</span></td>
                     </tr>
                 `).join('');
             }
 
-            // Money Flow
-            updateMoneyFlow(openTrades, closedTrades, balance);
-        }
+            const dot = document.getElementById('statusDot');
+            const statusText = document.getElementById('statusText');
 
-        function updateMoneyFlow(openTrades, closedTrades, currentBalance) {
-            const allTrades = [...openTrades, ...closedTrades];
-
-            // FEES
-            let totalFees = 0, feesEntry = 0, feesExit = 0, feesOpen = 0, feesClose = 0;
-            allTrades.forEach(t => {
-                const ef = parseFloat(t.entry_fee) || 0;
-                const xf = parseFloat(t.exit_fee) || 0;
-                const tf = parseFloat(t.total_fees) || (ef + xf);
-                totalFees += tf;
-                feesEntry += ef;
-                feesExit += xf;
-                if (t.status === 'OPEN') feesOpen += tf;
-                else feesClose += tf;
-            });
-
-            // FUNDING
-            let totalFunding = 0, fundingPositive = 0, fundingNegative = 0, fundingOpen = 0, fundingClosed = 0;
-            allTrades.forEach(t => {
-                const f = parseFloat(t.funding_paid) || parseFloat(t.total_funding) || 0;
-                totalFunding += f;
-                if (f > 0) fundingPositive += f;
-                if (f < 0) fundingNegative += f;
-                if (t.status === 'OPEN') fundingOpen += f;
-                else fundingClosed += f;
-            });
-
-            // FLOATING
-            let totalFloating = 0, floatingProfit = 0, floatingLoss = 0;
-            openTrades.forEach(t => {
-                const p = parseFloat(t.pnl) || 0;
-                totalFloating += p;
-                if (p > 0) floatingProfit += p;
-                if (p < 0) floatingLoss += p;
-            });
-
-            // CLOSED
-            let totalClosedPnl = 0, closedProfit = 0, closedLoss = 0;
-            closedTrades.forEach(t => {
-                const p = parseFloat(t.pnl) || 0;
-                totalClosedPnl += p;
-                if (p > 0) closedProfit += p;
-                if (p < 0) closedLoss += p;
-            });
-
-            // Update cards
-            document.getElementById('totalFees').textContent = fmtMoney2(totalFees);
-            document.getElementById('feesEntry').textContent = fmtMoney2(feesEntry);
-            document.getElementById('feesExit').textContent = fmtMoney2(feesExit);
-            document.getElementById('feesOpen').textContent = fmtMoney2(feesOpen);
-            document.getElementById('feesClose').textContent = fmtMoney2(feesClose);
-
-            document.getElementById('totalFunding').textContent = fmtMoney2(totalFunding);
-            document.getElementById('fundingPositive').textContent = fmtMoney2(fundingPositive);
-            document.getElementById('fundingNegative').textContent = fmtMoney2(fundingNegative);
-            document.getElementById('fundingOpen').textContent = fmtMoney2(fundingOpen);
-            document.getElementById('fundingClosed').textContent = fmtMoney2(fundingClosed);
-
-            document.getElementById('totalFloating').textContent = fmtMoney2(totalFloating);
-            document.getElementById('floatingProfit').textContent = fmtMoney2(floatingProfit);
-            document.getElementById('floatingLoss').textContent = fmtMoney2(floatingLoss);
-            document.getElementById('floatingCount').textContent = openTrades.length;
-            document.getElementById('floatingAvg').textContent = openTrades.length > 0 ? fmtMoney2(totalFloating / openTrades.length) : '$0.00';
-
-            document.getElementById('totalClosedPnl').textContent = fmtMoney2(totalClosedPnl);
-            document.getElementById('closedProfit').textContent = fmtMoney2(closedProfit);
-            document.getElementById('closedLoss').textContent = fmtMoney2(closedLoss);
-            document.getElementById('closedCount').textContent = closedTrades.length;
-            document.getElementById('closedAvg').textContent = closedTrades.length > 0 ? fmtMoney2(totalClosedPnl / closedTrades.length) : '$0.00';
-
-            // Sankey
-            const startBalance = 1000;
-            const maxBar = Math.max(startBalance, Math.abs(totalClosedPnl), Math.abs(totalFloating), Math.abs(totalFees), Math.abs(totalFunding), Math.abs(currentBalance), 1);
-            const pct = (v) => Math.min(100, Math.max(0, (Math.abs(v) / maxBar) * 100));
-
-            document.getElementById('sankeyStart').style.width = pct(startBalance) + '%';
-            document.getElementById('sankeyStart').textContent = fmtMoney2(startBalance);
-            document.getElementById('sankeyStartVal').textContent = fmtMoney2(startBalance);
-
-            document.getElementById('sankeyClosedPnl').style.width = pct(totalClosedPnl) + '%';
-            document.getElementById('sankeyClosedPnl').textContent = fmtMoney2(totalClosedPnl);
-            document.getElementById('sankeyClosedPnlVal').textContent = fmtMoney2(totalClosedPnl);
-            document.getElementById('sankeyClosedPnlVal').className = 'sankey-value ' + (totalClosedPnl >= 0 ? 'green' : 'red');
-
-            document.getElementById('sankeyFloating').style.width = pct(totalFloating) + '%';
-            document.getElementById('sankeyFloating').textContent = fmtMoney2(totalFloating);
-            document.getElementById('sankeyFloatingVal').textContent = fmtMoney2(totalFloating);
-            document.getElementById('sankeyFloatingVal').className = 'sankey-value ' + (totalFloating >= 0 ? 'purple' : 'red');
-
-            document.getElementById('sankeyFees').style.width = pct(totalFees) + '%';
-            document.getElementById('sankeyFees').textContent = fmtMoney2(totalFees);
-            document.getElementById('sankeyFeesVal').textContent = fmtMoney2(totalFees);
-
-            document.getElementById('sankeyFunding').style.width = pct(Math.abs(totalFunding)) + '%';
-            document.getElementById('sankeyFunding').textContent = fmtMoney2(totalFunding);
-            document.getElementById('sankeyFundingVal').textContent = fmtMoney2(totalFunding);
-
-            document.getElementById('sankeyNet').textContent = fmtMoney2(currentBalance);
-            document.getElementById('sankeyNet').className = 'sankey-net-value ' + (currentBalance >= startBalance ? 'green' : 'red');
-
-            const calculated = startBalance + totalClosedPnl + totalFloating - totalFees - totalFunding;
-            const drift = currentBalance - calculated;
-            document.getElementById('sankeyDrift').textContent = fmtMoney2(drift);
-            document.getElementById('sankeyDrift').style.color = Math.abs(drift) < 0.01 ? '#00e676' : '#ff9800';
-
-            // Per-trade breakdown
-            const perTradeDiv = document.getElementById('perTradeBreakdown');
-            if (allTrades.length === 0) {
-                perTradeDiv.innerHTML = `<div class="empty-state" style="padding: 30px;"><div class="icon">📊</div>Нет данных</div>`;
+            if (x.updated_at) {
+                dot.className = 'dot online';
+                statusText.textContent = 'Онлайн';
             } else {
-                perTradeDiv.innerHTML = allTrades.map(t => {
-                    const pnl = parseFloat(t.pnl) || 0;
-                    const fees = parseFloat(t.total_fees) || (parseFloat(t.entry_fee) || 0) + (parseFloat(t.exit_fee) || 0);
-                    const funding = parseFloat(t.funding_paid) || parseFloat(t.total_funding) || 0;
-                    const total = pnl + fees + funding;
-                    const margin = parseFloat(t.margin) || 10;
-                    const pctOfMargin = (total / margin) * 100;
-
-                    return `
-                        <div class="per-trade-row">
-                            <div class="per-trade-symbol">${t.symbol}</div>
-                            <div class="per-trade-dir"><span class="badge ${t.direction}">${t.direction}</span></div>
-                            <div class="hide-mobile orange">${fmtMoney2(fees)}</div>
-                            <div class="hide-mobile cyan">${fmtMoney2(funding)}</div>
-                            <div class="${pnl >= 0 ? 'green' : 'red'}">${pnl >= 0 ? '+' : ''}${fmtMoney2(pnl)}</div>
-                            <div class="hide-mobile ${total >= 0 ? 'green' : 'red'}">${total >= 0 ? '+' : ''}${fmtMoney2(total)}</div>
-                            <div class="hide-mobile ${total >= 0 ? 'green' : 'red'}">${fmtPct(pctOfMargin)}</div>
-                        </div>
-                    `;
-                }).join('');
+                dot.className = 'dot';
+                statusText.textContent = 'Ожидание данных';
             }
+
+            document.getElementById('lastUpdate').textContent = 
+                'Обновлено: ' + new Date().toLocaleTimeString('ru-RU');
+
+            // Update money flow tab
+            updateMoneyFlow();
         }
 
-        // ============ AUTO REFRESH ============
-        refreshData();
-        setInterval(refreshData, 2000);
+        db.collection('trading_state').doc('current').onSnapshot((doc) => {
+            if (doc.exists) {
+                const data = doc.data();
+                state = { ...state, ...data };
+                updateUI();
+            }
+        }, (err) => {
+            console.error('Firestore error:', err);
+            document.getElementById('statusDot').className = 'dot';
+            document.getElementById('statusText').textContent = 'Ошибка подключения';
+        });
+
+        db.collection('trades_history').orderBy('saved_at', 'desc').onSnapshot((snapshot) => {
+            const trades = [];
+            snapshot.forEach((doc) => {
+                trades.push(doc.data());
+            });
+            state.closed_trades = trades;
+            state.total_trades = trades.length;
+            updateUI();
+        });
     </script>
 </body>
 </html>
