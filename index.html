@@ -385,7 +385,8 @@
             balance: 1000,
             available_balance: 1000,
             open_trades: [],
-            closed_trades: []
+            closed_trades: [],
+            total_trades: 0
         };
 
         const fmtMoney = (v) => {
@@ -592,16 +593,22 @@
 
             document.getElementById('openCount').textContent = openTrades.length;
             document.getElementById('openCountHeader').textContent = openTrades.length;
-            document.getElementById('totalTrades').textContent = x.total_trades || 0;
 
-            const wins = (x.closed_trades || []).filter(t => (parseFloat(t.pnl) || 0) > 0).length;
-            const losses = (x.closed_trades || []).filter(t => (parseFloat(t.pnl) || 0) < 0).length;
-            const liqs = (x.closed_trades || []).filter(t => t.status === 'LIQUIDATED').length;
-            const totalClosed = (x.closed_trades || []).length;
+            // ✅ Используем total_trades из state (синхронизирован с ботом)
+            const totalTrades = x.total_trades || 0;
+            document.getElementById('totalTrades').textContent = totalTrades;
+
+            const closedTrades = x.closed_trades || [];
+            const wins = closedTrades.filter(t => (parseFloat(t.pnl) || 0) > 0).length;
+            const losses = closedTrades.filter(t => (parseFloat(t.pnl) || 0) < 0).length;
+            const liqs = closedTrades.filter(t => t.status === 'LIQUIDATED').length;
+            const totalClosed = closedTrades.length;
 
             document.getElementById('winCount').textContent = wins;
             document.getElementById('lossCount').textContent = losses;
             document.getElementById('liqCount').textContent = liqs;
+            
+            // ✅ WinRate считаем из closed_trades, не из total_trades
             document.getElementById('winRate').textContent = totalClosed > 0 
                 ? ((wins / totalClosed) * 100).toFixed(1) + '%' 
                 : '0%';
@@ -661,7 +668,6 @@
             }
 
             const histTable = document.getElementById('historyTable');
-            const closedTrades = x.closed_trades || [];
             document.getElementById('historyCount').textContent = closedTrades.length;
 
             if (closedTrades.length === 0) {
@@ -707,6 +713,7 @@
             updateMoneyFlow();
         }
 
+        // ✅ Подписка на trading_state
         db.collection('trading_state').doc('current').onSnapshot((doc) => {
             if (doc.exists) {
                 const data = doc.data();
@@ -719,7 +726,7 @@
             document.getElementById('statusText').textContent = 'Ошибка подключения';
         });
 
-        // ✅ Оптимизация: один документ 'latest' вместо коллекции
+        // ✅ Подписка на trades_history/latest (один документ вместо коллекции)
         db.collection('trades_history').doc('latest').onSnapshot((doc) => {
             if (doc.exists) {
                 const data = doc.data();
