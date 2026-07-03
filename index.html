@@ -3,9 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>Trading Bot Dashboard</title>
+    
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    
+    <script>
+        // Проверка загрузки Firebase
+        if (typeof firebase === 'undefined') {
+            document.addEventListener('DOMContentLoaded', function() {
+                document.body.innerHTML = '<div style="padding:50px;text-align:center;color:#ff5252;font-size:18px;">❌ Firebase SDK не загружен.<br>Отключите AdBlock/Pi-hole и перезагрузите.<br><br><button onclick="location.reload(true)" style="padding:10px 20px;font-size:16px;cursor:pointer;">Перезагрузить</button></div>';
+            });
+            throw new Error('Firebase not loaded');
+        }
+    </script>
+    
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -264,7 +279,6 @@
         ::-webkit-scrollbar-track { background: #0a0e1a; }
         ::-webkit-scrollbar-thumb { background: #2a2f5a; border-radius: 3px; }
 
-        /* ============ TABS ============ */
         .tabs-nav {
             display: flex;
             gap: 8px;
@@ -293,7 +307,6 @@
         .tab-content { display: none; }
         .tab-content.active { display: block; }
 
-        /* ============ MONEY FLOW SECTION ============ */
         .money-flow-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -542,7 +555,6 @@
             .per-trade-row .hide-mobile { display: none; }
         }
     </style>
-<base target="_blank">
 </head>
 <body>
     <div class="container">
@@ -593,13 +605,11 @@
             </div>
         </div>
 
-        <!-- TABS -->
         <div class="tabs-nav">
             <button class="tab-btn active" data-tab="trades" onclick="switchTab('trades')">📊 Сделки</button>
             <button class="tab-btn" data-tab="moneyflow" onclick="switchTab('moneyflow')">💰 Поток денег</button>
         </div>
 
-        <!-- TAB: TRADES -->
         <div id="tab-trades" class="tab-content active">
             <div class="section">
                 <div class="section-header">
@@ -642,7 +652,6 @@
             </div>
         </div>
 
-        <!-- TAB: MONEY FLOW -->
         <div id="tab-moneyflow" class="tab-content">
             <div class="section">
                 <div class="section-header">
@@ -747,7 +756,6 @@
                     </div>
                 </div>
 
-                <!-- SANKEY / FLOW VISUALIZATION -->
                 <div style="margin-top: 20px;">
                     <div class="section-header">
                         <div class="section-title">📈 Визуализация потока</div>
@@ -801,7 +809,6 @@
                     </div>
                 </div>
 
-                <!-- PER-TRADE BREAKDOWN -->
                 <div class="per-trade-breakdown" style="margin-top: 20px;">
                     <div class="section-header">
                         <div class="section-title">📋 Разбивка по сделкам</div>
@@ -870,13 +877,11 @@
             document.getElementById(`tab-${tab}`).classList.add('active');
         }
 
-        // ======== MONEY FLOW CALCULATIONS ========
         function calcMoneyFlow() {
             const openTrades = state.open_trades || [];
             const closedTrades = state.closed_trades || [];
             const allTrades = [...openTrades, ...closedTrades];
 
-            // FEES
             let totalFees = 0;
             let feesEntry = 0, feesExit = 0, feesOpen = 0, feesClose = 0;
 
@@ -894,7 +899,6 @@
                 feesClose += closeFee;
             });
 
-            // FUNDING
             let totalFunding = 0;
             let fundingPositive = 0, fundingNegative = 0;
             let fundingOpen = 0, fundingClosed = 0;
@@ -910,7 +914,6 @@
                 else fundingClosed += funding;
             });
 
-            // FLOATING P&L
             let totalFloating = 0;
             let floatingProfit = 0, floatingLoss = 0;
 
@@ -921,7 +924,6 @@
                 if (pnl < 0) floatingLoss += pnl;
             });
 
-            // CLOSED P&L
             let totalClosedPnl = 0;
             let closedProfit = 0, closedLoss = 0;
 
@@ -943,7 +945,6 @@
         function updateMoneyFlow() {
             const flow = calcMoneyFlow();
 
-            // Update cards
             document.getElementById('totalFees').textContent = fmtMoney(flow.totalFees);
             document.getElementById('feesEntry').textContent = fmtMoney(flow.feesEntry);
             document.getElementById('feesExit').textContent = fmtMoney(flow.feesExit);
@@ -968,7 +969,6 @@
             document.getElementById('closedCount').textContent = flow.closedCount;
             document.getElementById('closedAvg').textContent = flow.closedCount > 0 ? fmtMoney(flow.totalClosedPnl / flow.closedCount) : '$0';
 
-            // Sankey
             const startBalance = 1000;
             const currentBalance = parseFloat(state.balance) || 1000;
             const maxBar = Math.max(startBalance, Math.abs(flow.totalClosedPnl), Math.abs(flow.totalFloating), Math.abs(flow.totalFees), Math.abs(flow.totalFunding), currentBalance);
@@ -1005,7 +1005,6 @@
             document.getElementById('sankeyDrift').textContent = fmtMoney(drift);
             document.getElementById('sankeyDrift').style.color = Math.abs(drift) < 0.01 ? '#00e676' : '#ff9800';
 
-            // Per-trade breakdown
             const allTrades = [...(state.open_trades || []), ...(state.closed_trades || [])];
             const perTradeDiv = document.getElementById('perTradeBreakdown');
 
@@ -1169,7 +1168,6 @@
             document.getElementById('lastUpdate').textContent = 
                 'Обновлено: ' + new Date().toLocaleTimeString('ru-RU');
 
-            // Update money flow tab
             updateMoneyFlow();
         }
 
