@@ -386,7 +386,11 @@
             available_balance: 1000,
             open_trades: [],
             closed_trades: [],
-            total_trades: 0
+            total_trades: 0,
+            total_fees_paid: 0,
+            total_funding_paid: 0,
+            realized_pnl: 0,
+            unrealized_pnl: 0
         };
 
         const fmtMoney = (v) => {
@@ -594,7 +598,6 @@
             document.getElementById('openCount').textContent = openTrades.length;
             document.getElementById('openCountHeader').textContent = openTrades.length;
 
-            // ✅ Используем total_trades из state (синхронизирован с ботом)
             const totalTrades = x.total_trades || 0;
             document.getElementById('totalTrades').textContent = totalTrades;
 
@@ -608,7 +611,6 @@
             document.getElementById('lossCount').textContent = losses;
             document.getElementById('liqCount').textContent = liqs;
             
-            // ✅ WinRate считаем из closed_trades, не из total_trades
             document.getElementById('winRate').textContent = totalClosed > 0 
                 ? ((wins / totalClosed) * 100).toFixed(1) + '%' 
                 : '0%';
@@ -713,7 +715,7 @@
             updateMoneyFlow();
         }
 
-        // ✅ Подписка на trading_state
+        // ✅ ТОЛЬКО ОДНА подписка на trading_state/current
         db.collection('trading_state').doc('current').onSnapshot((doc) => {
             if (doc.exists) {
                 const data = doc.data();
@@ -724,22 +726,6 @@
             console.error('Firestore error:', err);
             document.getElementById('statusDot').className = 'dot';
             document.getElementById('statusText').textContent = 'Ошибка подключения';
-        });
-
-        // ✅ Подписка на trades_history/latest (один документ вместо коллекции)
-        db.collection('trades_history').doc('latest').onSnapshot((doc) => {
-            if (doc.exists) {
-                const data = doc.data();
-                state.closed_trades = data.trades || [];
-                state.total_trades = data.count || 0;
-                updateUI();
-            } else {
-                state.closed_trades = [];
-                state.total_trades = 0;
-                updateUI();
-            }
-        }, (err) => {
-            console.error('History error:', err);
         });
     </script>
 </body>
