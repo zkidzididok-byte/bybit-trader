@@ -139,6 +139,7 @@
             .per-trade-row .hide-mobile { display: none; }
         }
     </style>
+<base target="_blank">
 </head>
 <body>
     <div class="container">
@@ -153,12 +154,12 @@
         <div class="balance-section">
             <div class="balance-card">
                 <div class="balance-label">Текущий баланс</div>
-                <div class="balance-value" id="balance">$1000</div>
+                <div class="balance-value" id="balance">$2000</div>
                 <div class="balance-change" id="pnlChange"><span class="green">+$0 (0%)</span></div>
             </div>
             <div class="balance-card">
                 <div class="balance-label">Доступно для торговли</div>
-                <div class="balance-value" id="available">$1000</div>
+                <div class="balance-value" id="available">$2000</div>
             </div>
         </div>
 
@@ -300,9 +301,9 @@
                         <div class="sankey-row">
                             <div class="sankey-label">Начальный баланс</div>
                             <div class="sankey-bar-wrap">
-                                <div class="sankey-bar income" id="sankeyStart" style="width: 100%">$1000</div>
+                                <div class="sankey-bar income" id="sankeyStart" style="width: 100%">$2000</div>
                             </div>
-                            <div class="sankey-value" id="sankeyStartVal">$1000</div>
+                            <div class="sankey-value" id="sankeyStartVal">$2000</div>
                         </div>
                         <div class="sankey-divider"></div>
                         <div class="sankey-row">
@@ -382,8 +383,9 @@
         const db = firebase.firestore();
 
         let state = {
-            balance: 1000,
-            available_balance: 1000,
+            balance: 2000,
+            available_balance: 2000,
+            initial_balance: 2000,
             open_trades: [],
             closed_trades: [],
             total_trades: 0,
@@ -510,7 +512,7 @@
             document.getElementById('closedCount').textContent = flow.closedCount;
             document.getElementById('closedAvg').textContent = flow.closedCount > 0 ? fmtMoney(flow.totalClosedPnl / flow.closedCount) : '$0';
 
-            const startBalance = 1000;
+            const startBalance = parseFloat(state.initial_balance) || parseFloat(state.wallet_balance) || 2000;
             const currentBalance = parseFloat(state.balance) || 1000;
             const maxBar = Math.max(startBalance, Math.abs(flow.totalClosedPnl), Math.abs(flow.totalFloating), Math.abs(flow.totalFees), Math.abs(flow.totalFunding), currentBalance);
 
@@ -588,8 +590,9 @@
             document.getElementById('balance').textContent = fmtMoney(x.balance);
             document.getElementById('available').textContent = fmtMoney(x.available_balance);
 
-            const pnl = (parseFloat(x.balance) || 0) - 1000;
-            const pnlPct = ((pnl / 1000) * 100);
+            const initialBal = parseFloat(x.initial_balance) || parseFloat(x.wallet_balance) || 2000;
+            const pnl = (parseFloat(x.balance) || 0) - initialBal;
+            const pnlPct = ((pnl / initialBal) * 100);
             document.getElementById('pnlChange').innerHTML = 
                 `<span class="${pnl >= 0 ? 'green' : 'red'}">${pnl >= 0 ? '+' : ''}${fmtMoney(pnl)} (${pnl >= 0 ? '+' : ''}${pnlPct.toFixed(2)}%)</span>`;
 
