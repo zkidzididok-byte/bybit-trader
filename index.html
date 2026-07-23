@@ -140,6 +140,7 @@
         }
     </style>
 <base target="_blank">
+<base target="_blank">
 </head>
 <body>
     <div class="container">
@@ -720,16 +721,30 @@
 
         // ✅ ТОЛЬКО ОДНА подписка на trading_state/current
         db.collection('trading_state').doc('current').onSnapshot((doc) => {
+            console.log('>>> onSnapshot triggered, exists:', doc.exists);
             if (doc.exists) {
                 const data = doc.data();
+                console.log('>>> Firestore data:', JSON.stringify(data).substring(0, 500));
                 state = { ...state, ...data };
-                updateUI();
+                console.log('>>> Calling updateUI with data, balance:', data.balance);
+                updateUI(data);
+                console.log('>>> updateUI returned');
             }
         }, (err) => {
             console.error('Firestore error:', err);
             document.getElementById('statusDot').className = 'dot';
             document.getElementById('statusText').textContent = 'Ошибка подключения';
         });
+
+        // Принудительная загрузка при старте
+        db.collection('trading_state').doc('current').get().then((doc) => {
+            console.log('>>> Initial get, exists:', doc.exists);
+            if (doc.exists) {
+                const data = doc.data();
+                state = { ...state, ...data };
+                updateUI(data);
+            }
+        }).catch(err => console.error('Initial get error:', err));
     </script>
 </body>
 </html>
