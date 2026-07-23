@@ -371,6 +371,8 @@
     </div>
 
     <script>
+        console.log('=== SCRIPT STARTED ===');
+
         const firebaseConfig = {
             apiKey: "AIzaSyDn3khNbagwGPKSkup5nv12H9n6q8mvv9g",
             authDomain: "market-sim-350b1.firebaseapp.com",
@@ -381,7 +383,9 @@
         };
 
         firebase.initializeApp(firebaseConfig);
+        console.log('=== Firebase initialized ===');
         const db = firebase.firestore();
+        console.log('=== Firestore db created ===');
 
         let state = {
             balance: 2000,
