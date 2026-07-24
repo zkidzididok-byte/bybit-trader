@@ -719,18 +719,76 @@
             updateMoneyFlow();
         }
 
-        // ✅ ТОЛЬКО ОДНА подписка на trading_state/current
-        db.collection('trading_state').doc('current').onSnapshot((doc) => {
-            if (doc.exists) {
-                const data = doc.data();
-                state = { ...state, ...data };
-                updateUI();
-            }
-        }, (err) => {
-            console.error('Firestore error:', err);
-            document.getElementById('statusDot').className = 'dot';
-            document.getElementById('statusText').textContent = 'Ошибка подключения';
+        console.log('=== FIRESTORE BLOCK START ===');
+
+        // ✅ Подписка на trading_state/bot1
+        const BOT_ID = 'bot1';
+
+        // Проверим, что Firestore вообще работает
+        console.log('>>> Firebase app:', firebase.apps.length > 0 ? 'initialized' : 'NOT initialized');
+        console.log('>>> Firestore db:', db ? 'OK' : 'NULL');
+
+        // Попробуем получить список ВСЕХ документов в коллекции trading_state
+        db.collection('trading_state').get().then((snapshot) => {
+            console.log('>>> ALL docs in trading_state count:', snapshot.size);
+            snapshot.forEach((doc) => {
+                console.log('>>> Found doc id:', doc.id, 'data keys:', Object.keys(doc.data()));
+            });
+        }).catch((err) => {
+            console.error('>>> List collection error:', err.code, err.message);
         });
+
+        function loadBotData(docId) {
+            console.log('>>> Loading bot:', docId);
+            return db.collection('trading_state').doc(docId).get().then((doc) => {
+                console.log('>>> get() for', docId, 'exists:', doc.exists);
+                if (doc.exists) {
+                    const data = doc.data();
+                    console.log('>>> Data from', docId, 'keys:', Object.keys(data));
+                    console.log('>>> balance:', data.balance);
+                    state = { ...state, ...data };
+                    updateUI(data);
+
+                    // Подписываемся на обновления
+                    db.collection('trading_state').doc(docId).onSnapshot((snap) => {
+                        console.log('>>> onSnapshot for', docId, 'exists:', snap.exists);
+                        if (snap.exists) {
+                            const d = snap.data();
+                            state = { ...state, ...d };
+                            updateUI(d);
+                        }
+                    }, (err) => {
+                        console.error('>>> onSnapshot error:', err);
+                    });
+                    return true;
+                }
+                return false;
+            }).catch((err) => {
+                console.error('>>> get() error for', docId, ':', err.code, err.message);
+                return false;
+            });
+        }
+
+        loadBotData(BOT_ID).then((found) => {
+            if (!found) {
+                console.log('>>> bot1 not found, trying bot2...');
+                return loadBotData('bot2');
+            }
+        }).then((found) => {
+            if (found === false) {
+                console.log('>>> bot2 not found, trying bot3...');
+                return loadBotData('bot3');
+            }
+        }).then((found) => {
+            if (found === false) {
+                document.getElementById('statusText').textContent = 'Бот не найден';
+                console.log('>>> No bots found at all');
+            }
+        }).catch((err) => {
+            console.error('>>> Top-level error:', err);
+        });
+
+        console.log('=== SCRIPT END REACHED ===');
     </script>
 </body>
 </html>
