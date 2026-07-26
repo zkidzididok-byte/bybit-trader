@@ -131,6 +131,7 @@
         .progress-bar.pnl { background: #00e676; }
         .progress-bar.loss { background: #ff5252; }
 
+        /* ===== MODAL STYLES ===== */
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); z-index: 9999; display: flex; align-items: center; justify-content: center; }
         .modal-box { background: linear-gradient(135deg, #1a1f3a, #0f1535); border-radius: 20px; padding: 35px; border: 1px solid #2a2f5a; max-width: 480px; width: 90%; position: relative; box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
         .modal-box h2 { font-size: 1.4em; background: linear-gradient(135deg, #00d4ff, #7b2cbf); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px; }
@@ -166,6 +167,7 @@
 <base target="_blank">
 </head>
 <body>
+    <!-- ===== MODAL ===== -->
     <div class="modal-overlay" id="apiModal">
         <div class="modal-box">
             <button class="modal-close" id="modalClose" title="Виртуальный режим">&times;</button>
@@ -294,7 +296,7 @@
         <div id="tab-moneyflow" class="tab-content">
             <div class="section">
                 <div class="section-header">
-                    <div class="section-title">💰 Куда уходят деньги (Бот 3)</div>
+                    <div class="section-title">💰 Куда уходят деньги (Бот 4)</div>
                 </div>
 
                 <div class="money-flow-grid">
@@ -436,6 +438,7 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
+        // ===== MODE STATE =====
         let isRealMode = false;
         let apiCredentials = null;
         let bybitPositions = [];
@@ -474,6 +477,7 @@
             });
         };
 
+        // ===== BYBIT API HELPERS =====
         function generateSignature(apiSecret, timestamp, recvWindow, queryString) {
             const message = timestamp + apiSecret + recvWindow + queryString;
             return CryptoJS.HmacSHA256(message, apiSecret).toString();
@@ -535,6 +539,7 @@
             }
         }
 
+        // ===== MODAL LOGIC =====
         const modal = document.getElementById('apiModal');
         const modalClose = document.getElementById('modalClose');
         const btnVirtual = document.getElementById('btnVirtual');
@@ -570,6 +575,7 @@
 
             apiCredentials = { apiKey: key, apiSecret: secret, accountType: accType };
 
+            // Test connection
             const bal = await fetchBybitBalance(apiCredentials);
             if (!bal) {
                 alert('Не удалось подключиться к Bybit. Проверьте ключи.');
@@ -595,12 +601,14 @@
         btnVirtual.addEventListener('click', setVirtualMode);
         btnConnect.addEventListener('click', setRealMode);
 
+        // Close modal on Escape
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape' && modal.style.display !== 'none') {
                 setVirtualMode();
             }
         });
 
+        // ===== REAL DATA REFRESH =====
         async function refreshRealData() {
             if (!isRealMode || !apiCredentials) return;
 
@@ -614,6 +622,7 @@
             const positions = await fetchBybitPositions(apiCredentials);
             bybitPositions = positions;
 
+            // Convert Bybit positions to our trade format
             state.open_trades = positions.map(p => {
                 const side = p.side === 'Buy' ? 'LONG' : 'SHORT';
                 const entryPrice = parseFloat(p.avgPrice) || parseFloat(p.entryPrice) || 0;
@@ -660,6 +669,7 @@
             state.unrealized_pnl = state.open_trades.reduce((sum, t) => sum + (parseFloat(t.pnl) || 0), 0);
         }
 
+        // Periodic refresh for real mode
         setInterval(async () => {
             if (isRealMode) {
                 await refreshRealData();
@@ -972,6 +982,7 @@
             updateMoneyFlow();
         }
 
+        // ✅ Подписка на trading_state/bot3 (для третьего бота)
         db.collection('trading_state').doc('bot3').onSnapshot((doc) => {
             if (doc.exists && !isRealMode) {
                 const data = doc.data();
@@ -986,6 +997,7 @@
             }
         });
     </script>
+    <!-- CryptoJS for HMAC-SHA256 signature generation -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
 </body>
 </html>
