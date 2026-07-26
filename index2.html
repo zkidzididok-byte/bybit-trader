@@ -6,7 +6,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <title>Trading Bot 2 Dashboard</title>
+    <title>Trading Bot 3 Dashboard</title>
 
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
@@ -130,6 +130,29 @@
         .progress-bar.funding { background: #00bcd4; }
         .progress-bar.pnl { background: #00e676; }
         .progress-bar.loss { background: #ff5252; }
+
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); z-index: 9999; display: flex; align-items: center; justify-content: center; }
+        .modal-box { background: linear-gradient(135deg, #1a1f3a, #0f1535); border-radius: 20px; padding: 35px; border: 1px solid #2a2f5a; max-width: 480px; width: 90%; position: relative; box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
+        .modal-box h2 { font-size: 1.4em; background: linear-gradient(135deg, #00d4ff, #7b2cbf); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px; }
+        .modal-sub { color: #8892b0; font-size: 0.9em; margin-bottom: 25px; }
+        .modal-close { position: absolute; top: 18px; right: 20px; background: none; border: none; color: #8892b0; font-size: 1.6em; cursor: pointer; line-height: 1; transition: color 0.2s; }
+        .modal-close:hover { color: #ff5252; }
+        .form-group { margin-bottom: 18px; }
+        .form-label { display: block; font-size: 0.8em; color: #8892b0; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+        .form-input { width: 100%; padding: 12px 14px; background: #0d1128; border: 1px solid #2a2f5a; border-radius: 10px; color: #e0e0e0; font-size: 0.95em; font-family: 'Segoe UI', monospace; transition: border-color 0.2s; }
+        .form-input:focus { outline: none; border-color: #00d4ff; }
+        .form-input::placeholder { color: #555; }
+        .modal-actions { display: flex; gap: 12px; margin-top: 25px; }
+        .btn { flex: 1; padding: 12px 20px; border-radius: 10px; font-size: 0.95em; font-weight: 600; cursor: pointer; border: none; transition: all 0.2s; }
+        .btn-primary { background: linear-gradient(135deg, #00d4ff, #7b2cbf); color: #fff; }
+        .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+        .btn-secondary { background: #1a1f3a; color: #8892b0; border: 1px solid #2a2f5a; }
+        .btn-secondary:hover { border-color: #00d4ff; color: #00d4ff; }
+        .mode-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 20px; font-size: 0.75em; font-weight: 600; }
+        .mode-badge.virtual { background: rgba(0,212,255,0.15); color: #00d4ff; }
+        .mode-badge.real { background: rgba(0,230,118,0.15); color: #00e676; }
+        .api-status { font-size: 0.8em; color: #8892b0; margin-top: 4px; }
+
         @media (max-width: 768px) {
             .balance-section { grid-template-columns: 1fr; }
             .stats-grid { grid-template-columns: repeat(2, 1fr); }
@@ -137,15 +160,45 @@
             .money-flow-grid { grid-template-columns: 1fr; }
             .per-trade-row { grid-template-columns: 60px 60px 1fr 1fr; }
             .per-trade-row .hide-mobile { display: none; }
+            .modal-box { padding: 25px 20px; }
         }
     </style>
 <base target="_blank">
-<base target="_blank">
 </head>
 <body>
+    <div class="modal-overlay" id="apiModal">
+        <div class="modal-box">
+            <button class="modal-close" id="modalClose" title="Виртуальный режим">&times;</button>
+            <h2>🔑 API Bybit</h2>
+            <div class="modal-sub">Введите ключи для отображения реального баланса и сделок. Или закройте окно для виртуального режима ($2000).</div>
+            <div class="form-group">
+                <label class="form-label">API Key</label>
+                <input type="text" class="form-input" id="apiKey" placeholder="Ваш API Key" autocomplete="off">
+            </div>
+            <div class="form-group">
+                <label class="form-label">API Secret</label>
+                <input type="password" class="form-input" id="apiSecret" placeholder="Ваш API Secret" autocomplete="off">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Тип аккаунта</label>
+                <select class="form-input" id="accountType" style="cursor:pointer;">
+                    <option value="UNIFIED">Unified Trading Account</option>
+                    <option value="CONTRACT">Contract Account</option>
+                </select>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" id="btnVirtual">Виртуальный режим</button>
+                <button class="btn btn-primary" id="btnConnect">Подключить</button>
+            </div>
+        </div>
+    </div>
+
     <div class="container">
         <div class="header">
-            <h1>Trading Bot 2</h1>
+            <div>
+                <h1>Trading Bot 3</h1>
+                <div class="api-status" id="apiStatus">Режим: <span class="mode-badge virtual" id="modeBadge">🎮 Виртуальный</span></div>
+            </div>
             <div class="status">
                 <span class="dot" id="statusDot"></span>
                 <span id="statusText">Подключение...</span>
@@ -241,7 +294,7 @@
         <div id="tab-moneyflow" class="tab-content">
             <div class="section">
                 <div class="section-header">
-                    <div class="section-title">💰 Куда уходят деньги (Бот 2 — Трейлинг +5% → +3%)</div>
+                    <div class="section-title">💰 Куда уходят деньги (Бот 3)</div>
                 </div>
 
                 <div class="money-flow-grid">
@@ -383,6 +436,11 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
+        let isRealMode = false;
+        let apiCredentials = null;
+        let bybitPositions = [];
+        let bybitBalance = { wallet: 0, available: 0 };
+
         let state = {
             balance: 2000,
             available_balance: 2000,
@@ -395,6 +453,8 @@
             realized_pnl: 0,
             unrealized_pnl: 0
         };
+
+        const INITIAL_VIRTUAL_BALANCE = 2000;
 
         const fmtMoney = (v) => {
             const num = parseFloat(v) || 0;
@@ -413,6 +473,199 @@
                 day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit'
             });
         };
+
+        function generateSignature(apiSecret, timestamp, recvWindow, queryString) {
+            const message = timestamp + apiSecret + recvWindow + queryString;
+            return CryptoJS.HmacSHA256(message, apiSecret).toString();
+        }
+
+        async function fetchBybitBalance(creds) {
+            try {
+                const timestamp = Date.now().toString();
+                const recvWindow = '5000';
+                const query = `accountType=${creds.accountType}`;
+                const sign = generateSignature(creds.apiSecret, timestamp, recvWindow, query);
+
+                const resp = await fetch(`https://api.bybit.com/v5/account/wallet-balance?${query}`, {
+                    headers: {
+                        'X-BAPI-API-KEY': creds.apiKey,
+                        'X-BAPI-TIMESTAMP': timestamp,
+                        'X-BAPI-SIGN': sign,
+                        'X-BAPI-RECV-WINDOW': recvWindow
+                    }
+                });
+                const data = await resp.json();
+                if (data.retCode === 0 && data.result && data.result.list && data.result.list[0]) {
+                    const acc = data.result.list[0];
+                    return {
+                        wallet: parseFloat(acc.totalEquity) || 0,
+                        available: parseFloat(acc.totalAvailableBalance) || 0
+                    };
+                }
+                return null;
+            } catch (e) {
+                console.error('Bybit balance error:', e);
+                return null;
+            }
+        }
+
+        async function fetchBybitPositions(creds) {
+            try {
+                const timestamp = Date.now().toString();
+                const recvWindow = '5000';
+                const query = 'category=linear&limit=200';
+                const sign = generateSignature(creds.apiSecret, timestamp, recvWindow, query);
+
+                const resp = await fetch(`https://api.bybit.com/v5/position/list?${query}`, {
+                    headers: {
+                        'X-BAPI-API-KEY': creds.apiKey,
+                        'X-BAPI-TIMESTAMP': timestamp,
+                        'X-BAPI-SIGN': sign,
+                        'X-BAPI-RECV-WINDOW': recvWindow
+                    }
+                });
+                const data = await resp.json();
+                if (data.retCode === 0 && data.result && data.result.list) {
+                    return data.result.list.filter(p => parseFloat(p.size) !== 0);
+                }
+                return [];
+            } catch (e) {
+                console.error('Bybit positions error:', e);
+                return [];
+            }
+        }
+
+        const modal = document.getElementById('apiModal');
+        const modalClose = document.getElementById('modalClose');
+        const btnVirtual = document.getElementById('btnVirtual');
+        const btnConnect = document.getElementById('btnConnect');
+        const apiKeyInput = document.getElementById('apiKey');
+        const apiSecretInput = document.getElementById('apiSecret');
+        const accountTypeInput = document.getElementById('accountType');
+        const modeBadge = document.getElementById('modeBadge');
+        const apiStatus = document.getElementById('apiStatus');
+
+        function setVirtualMode() {
+            isRealMode = false;
+            apiCredentials = null;
+            modal.style.display = 'none';
+            modeBadge.className = 'mode-badge virtual';
+            modeBadge.textContent = '🎮 Виртуальный';
+            apiStatus.innerHTML = 'Режим: <span class="mode-badge virtual" id="modeBadge">🎮 Виртуальный</span>';
+            state.balance = INITIAL_VIRTUAL_BALANCE;
+            state.available_balance = INITIAL_VIRTUAL_BALANCE;
+            state.initial_balance = INITIAL_VIRTUAL_BALANCE;
+            updateUI();
+        }
+
+        async function setRealMode() {
+            const key = apiKeyInput.value.trim();
+            const secret = apiSecretInput.value.trim();
+            const accType = accountTypeInput.value;
+
+            if (!key || !secret) {
+                alert('Введите API Key и API Secret');
+                return;
+            }
+
+            apiCredentials = { apiKey: key, apiSecret: secret, accountType: accType };
+
+            const bal = await fetchBybitBalance(apiCredentials);
+            if (!bal) {
+                alert('Не удалось подключиться к Bybit. Проверьте ключи.');
+                return;
+            }
+
+            isRealMode = true;
+            bybitBalance = bal;
+            modal.style.display = 'none';
+            modeBadge.className = 'mode-badge real';
+            modeBadge.textContent = '🔴 Реальный';
+            apiStatus.innerHTML = 'Режим: <span class="mode-badge real" id="modeBadge">🔴 Реальный</span>';
+
+            state.balance = bal.wallet;
+            state.available_balance = bal.available;
+            state.initial_balance = bal.wallet;
+
+            await refreshRealData();
+            updateUI();
+        }
+
+        modalClose.addEventListener('click', setVirtualMode);
+        btnVirtual.addEventListener('click', setVirtualMode);
+        btnConnect.addEventListener('click', setRealMode);
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && modal.style.display !== 'none') {
+                setVirtualMode();
+            }
+        });
+
+        async function refreshRealData() {
+            if (!isRealMode || !apiCredentials) return;
+
+            const bal = await fetchBybitBalance(apiCredentials);
+            if (bal) {
+                bybitBalance = bal;
+                state.balance = bal.wallet;
+                state.available_balance = bal.available;
+            }
+
+            const positions = await fetchBybitPositions(apiCredentials);
+            bybitPositions = positions;
+
+            state.open_trades = positions.map(p => {
+                const side = p.side === 'Buy' ? 'LONG' : 'SHORT';
+                const entryPrice = parseFloat(p.avgPrice) || parseFloat(p.entryPrice) || 0;
+                const markPrice = parseFloat(p.markPrice) || entryPrice;
+                const size = parseFloat(p.size) || 0;
+                const leverage = parseFloat(p.leverage) || 10;
+                const notional = size * entryPrice;
+                const margin = notional / leverage;
+
+                let pnl = 0;
+                if (side === 'LONG') {
+                    pnl = (markPrice - entryPrice) * size;
+                } else {
+                    pnl = (entryPrice - markPrice) * size;
+                }
+                const pnlPct = entryPrice > 0 ? (pnl / margin) * 100 : 0;
+
+                return {
+                    id: p.symbol + '_' + Date.now(),
+                    symbol: p.symbol,
+                    direction: side,
+                    entry_price: entryPrice,
+                    current_price: markPrice,
+                    quantity: size,
+                    leverage: leverage,
+                    margin: margin,
+                    notional: notional,
+                    pnl: pnl,
+                    pnl_percent: pnlPct,
+                    stop_loss: parseFloat(p.stopLoss) || 0,
+                    trailing_stop: parseFloat(p.trailingStop) || 0,
+                    trailing_level: -1,
+                    highest_profit_pct: 0,
+                    open_time: new Date().toISOString(),
+                    status: 'OPEN',
+                    entry_fee: 0,
+                    exit_fee: 0,
+                    total_fees: 0,
+                    funding_paid: 0,
+                    total_funding: 0
+                };
+            });
+
+            state.unrealized_pnl = state.open_trades.reduce((sum, t) => sum + (parseFloat(t.pnl) || 0), 0);
+        }
+
+        setInterval(async () => {
+            if (isRealMode) {
+                await refreshRealData();
+                updateUI();
+            }
+        }, 5000);
 
         function switchTab(tab) {
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -513,8 +766,8 @@
             document.getElementById('closedCount').textContent = flow.closedCount;
             document.getElementById('closedAvg').textContent = flow.closedCount > 0 ? fmtMoney(flow.totalClosedPnl / flow.closedCount) : '$0';
 
-            const startBalance = parseFloat(state.initial_balance) || parseFloat(state.wallet_balance) || 2000;
-            const currentBalance = parseFloat(state.balance) || 1000;
+            const startBalance = parseFloat(state.initial_balance) || parseFloat(state.wallet_balance) || INITIAL_VIRTUAL_BALANCE;
+            const currentBalance = parseFloat(state.balance) || INITIAL_VIRTUAL_BALANCE;
             const maxBar = Math.max(startBalance, Math.abs(flow.totalClosedPnl), Math.abs(flow.totalFloating), Math.abs(flow.totalFees), Math.abs(flow.totalFunding), currentBalance);
 
             const pct = (v) => Math.min(100, Math.max(0, (Math.abs(v) / maxBar) * 100));
@@ -591,7 +844,7 @@
             document.getElementById('balance').textContent = fmtMoney(x.balance);
             document.getElementById('available').textContent = fmtMoney(x.available_balance);
 
-            const initialBal = parseFloat(x.initial_balance) || parseFloat(x.wallet_balance) || 2000;
+            const initialBal = parseFloat(x.initial_balance) || parseFloat(x.wallet_balance) || INITIAL_VIRTUAL_BALANCE;
             const pnl = (parseFloat(x.balance) || 0) - initialBal;
             const pnlPct = ((pnl / initialBal) * 100);
             document.getElementById('pnlChange').innerHTML = 
@@ -705,9 +958,9 @@
             const dot = document.getElementById('statusDot');
             const statusText = document.getElementById('statusText');
 
-            if (x.updated_at) {
+            if (x.updated_at || isRealMode) {
                 dot.className = 'dot online';
-                statusText.textContent = 'Онлайн';
+                statusText.textContent = isRealMode ? 'Bybit API' : 'Онлайн';
             } else {
                 dot.className = 'dot';
                 statusText.textContent = 'Ожидание данных';
@@ -719,18 +972,20 @@
             updateMoneyFlow();
         }
 
-        // ✅ Подписка на trading_state/bot2 (для второго бота)
-        db.collection('trading_state').doc('bot2').onSnapshot((doc) => {
-            if (doc.exists) {
+        db.collection('trading_state').doc('bot3').onSnapshot((doc) => {
+            if (doc.exists && !isRealMode) {
                 const data = doc.data();
                 state = { ...state, ...data };
                 updateUI();
             }
         }, (err) => {
             console.error('Firestore error:', err);
-            document.getElementById('statusDot').className = 'dot';
-            document.getElementById('statusText').textContent = 'Ошибка подключения';
+            if (!isRealMode) {
+                document.getElementById('statusDot').className = 'dot';
+                document.getElementById('statusText').textContent = 'Ошибка подключения';
+            }
         });
     </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
 </body>
 </html>
