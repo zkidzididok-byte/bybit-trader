@@ -1,1003 +1,689 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
-    <title>Trading Bot 3 Dashboard</title>
-
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-
-    <script>
-        if (typeof firebase === 'undefined') {
-            document.addEventListener('DOMContentLoaded', function() {
-                document.body.innerHTML = '<div style="padding:50px;text-align:center;color:#ff5252;font-size:18px;">❌ Firebase SDK не загружен.<br>Отключите AdBlock/Pi-hole и перезагрузите.<br><br><button onclick="location.reload(true)" style="padding:10px 20px;font-size:16px;cursor:pointer;">Перезагрузить</button></div>';
-            });
-            throw new Error('Firebase not loaded');
-        }
-    </script>
-
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0a0e1a; color: #e0e0e0; min-height: 100vh; }
-        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
-        .header { display: flex; justify-content: space-between; align-items: center; padding: 20px 25px; background: linear-gradient(135deg, #1a1f3a, #0f1535); border-radius: 16px; margin-bottom: 20px; border: 1px solid #2a2f5a; }
-        .header h1 { font-size: 1.5em; background: linear-gradient(135deg, #00d4ff, #7b2cbf); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .status { display: flex; align-items: center; gap: 8px; font-size: 0.9em; }
-        .dot { width: 10px; height: 10px; border-radius: 50%; background: #f44336; box-shadow: 0 0 8px #f44336; transition: all 0.3s; }
-        .dot.online { background: #00e676; box-shadow: 0 0 8px #00e676; }
-        .balance-section { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
-        .balance-card { background: linear-gradient(135deg, #1a1f3a, #0f1535); border-radius: 16px; padding: 25px; border: 1px solid #2a2f5a; position: relative; overflow: hidden; }
-        .balance-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, #00d4ff, #7b2cbf); }
-        .balance-label { font-size: 0.85em; color: #8892b0; text-transform: uppercase; letter-spacing: 1px; }
-        .balance-value { font-size: 2.2em; font-weight: 700; color: #fff; margin-top: 5px; }
-        .balance-change { font-size: 1em; margin-top: 8px; font-weight: 600; }
-        .green { color: #00e676; }
-        .red { color: #ff5252; }
-        .orange { color: #ff9800; }
-        .cyan { color: #00bcd4; }
-        .purple { color: #b388ff; }
-        .yellow { color: #ffd740; }
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 20px; }
-        .stat-box { background: #1a1f3a; border-radius: 12px; padding: 16px; text-align: center; border: 1px solid #2a2f5a; }
-        .stat-label { font-size: 0.75em; color: #8892b0; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
-        .stat-value { font-size: 1.4em; font-weight: 700; color: #fff; }
-        .section { background: #1a1f3a; border-radius: 16px; padding: 20px; margin-bottom: 20px; border: 1px solid #2a2f5a; }
-        .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-        .section-title { font-size: 1.1em; color: #00d4ff; display: flex; align-items: center; gap: 8px; }
-        .section-count { background: #0d1128; padding: 4px 12px; border-radius: 20px; font-size: 0.85em; color: #8892b0; }
-        .trade-list { display: flex; flex-direction: column; gap: 10px; }
-        .trade-card { background: #0d1128; border-radius: 12px; padding: 16px; border-left: 4px solid #00d4ff; }
-        .trade-card.LONG { border-left-color: #00e676; }
-        .trade-card.SHORT { border-left-color: #ff5252; }
-        .trade-card.STOP_LOSS { border-left-color: #ff9800; }
-        .trade-card.TRAILING_STOP { border-left-color: #00bcd4; }
-        .trade-card.LIQUIDATED { border-left-color: #ff1744; }
-        .trade-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-        .trade-symbol { font-size: 1.15em; font-weight: 700; }
-        .trade-time { font-size: 0.75em; color: #8892b0; margin-bottom: 12px; }
-        .trade-badges { display: flex; gap: 8px; }
-        .badge { padding: 4px 10px; border-radius: 20px; font-size: 0.75em; font-weight: 600; text-transform: uppercase; }
-        .badge.LONG { background: rgba(0,230,118,0.15); color: #00e676; }
-        .badge.SHORT { background: rgba(255,82,82,0.15); color: #ff5252; }
-        .badge.OPEN { background: rgba(0,212,255,0.15); color: #00d4ff; }
-        .badge.STOP_LOSS { background: rgba(255,152,0,0.15); color: #ff9800; }
-        .badge.TRAILING_STOP { background: rgba(0,188,212,0.15); color: #00bcd4; }
-        .badge.LIQUIDATED { background: rgba(255,23,68,0.2); color: #ff1744; }
-        .badge.CLOSED { background: rgba(0,230,118,0.15); color: #00e676; }
-        .trade-details { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; }
-        .detail-item { display: flex; flex-direction: column; gap: 2px; }
-        .detail-label { font-size: 0.7em; color: #8892b0; text-transform: uppercase; }
-        .detail-value { font-size: 0.95em; font-weight: 600; }
-        .pnl-positive { color: #00e676; }
-        .pnl-negative { color: #ff5252; }
-        table { width: 100%; border-collapse: collapse; font-size: 0.85em; }
-        th { background: #0d1128; padding: 12px 10px; text-align: left; color: #00d4ff; font-weight: 600; text-transform: uppercase; font-size: 0.75em; position: sticky; top: 0; }
-        td { padding: 10px; border-bottom: 1px solid #2a2f5a; }
-        tr:hover td { background: rgba(0,212,255,0.03); }
-        .empty-state { text-align: center; padding: 40px; color: #8892b0; }
-        .empty-state .icon { font-size: 3em; margin-bottom: 10px; opacity: 0.5; }
-        .last-update { font-size: 0.75em; color: #8892b0; text-align: right; margin-top: 10px; }
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: #0a0e1a; }
-        ::-webkit-scrollbar-thumb { background: #2a2f5a; border-radius: 3px; }
-        .tabs-nav { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
-        .tab-btn { background: #1a1f3a; border: 1px solid #2a2f5a; color: #8892b0; padding: 10px 20px; border-radius: 10px; cursor: pointer; font-size: 0.9em; font-weight: 600; transition: all 0.2s; display: flex; align-items: center; gap: 8px; }
-        .tab-btn:hover { border-color: #00d4ff; color: #00d4ff; }
-        .tab-btn.active { background: linear-gradient(135deg, #00d4ff, #7b2cbf); color: #fff; border-color: transparent; }
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
-        .money-flow-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; margin-bottom: 20px; }
-        .flow-card { background: linear-gradient(135deg, #0d1128, #1a1f3a); border-radius: 14px; padding: 20px; border: 1px solid #2a2f5a; position: relative; overflow: hidden; }
-        .flow-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, #00d4ff, #7b2cbf); }
-        .flow-card.fees::before { background: linear-gradient(90deg, #ff9800, #ff1744); }
-        .flow-card.funding::before { background: linear-gradient(90deg, #00bcd4, #00e676); }
-        .flow-card.floating::before { background: linear-gradient(90deg, #b388ff, #7b2cbf); }
-        .flow-card.closed::before { background: linear-gradient(90deg, #00e676, #00d4ff); }
-        .flow-card.net::before { background: linear-gradient(90deg, #ffd740, #ff9800); }
-        .flow-label { font-size: 0.8em; color: #8892b0; text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; gap: 6px; }
-        .flow-value { font-size: 1.8em; font-weight: 700; margin-top: 8px; }
-        .flow-sub { font-size: 0.8em; color: #8892b0; margin-top: 6px; }
-        .flow-breakdown { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px solid #2a2f5a; }
-        .flow-item { display: flex; justify-content: space-between; font-size: 0.8em; }
-        .flow-item-label { color: #8892b0; }
-        .flow-item-value { font-weight: 600; }
-        .sankey-flow { display: flex; flex-direction: column; gap: 12px; margin-top: 20px; }
-        .sankey-row { display: flex; align-items: center; gap: 12px; }
-        .sankey-label { width: 160px; font-size: 0.85em; color: #8892b0; text-align: right; }
-        .sankey-bar-wrap { flex: 1; height: 28px; background: #1a1f3a; border-radius: 6px; overflow: hidden; position: relative; }
-        .sankey-bar { height: 100%; border-radius: 6px; transition: width 0.5s ease; display: flex; align-items: center; padding-left: 10px; font-size: 0.8em; font-weight: 700; color: #fff; white-space: nowrap; }
-        .sankey-bar.income { background: linear-gradient(90deg, #00e676, #00d4ff); }
-        .sankey-bar.expense { background: linear-gradient(90deg, #ff5252, #ff9800); }
-        .sankey-bar.neutral { background: linear-gradient(90deg, #b388ff, #7b2cbf); }
-        .sankey-value { width: 100px; font-size: 0.85em; font-weight: 700; text-align: left; }
-        .sankey-divider { height: 1px; background: #2a2f5a; margin: 8px 0; }
-        .sankey-net { font-size: 1.2em; font-weight: 700; padding: 10px 0; border-top: 2px solid #2a2f5a; margin-top: 8px; display: flex; justify-content: space-between; }
-        .sankey-net-label { color: #8892b0; }
-        .sankey-net-value { font-size: 1.3em; }
-        .per-trade-breakdown { margin-top: 20px; }
-        .per-trade-row { display: grid; grid-template-columns: 60px 80px 1fr 1fr 1fr 1fr 1fr; gap: 10px; padding: 10px; border-bottom: 1px solid #2a2f5a; align-items: center; font-size: 0.85em; }
-        .per-trade-row.header { background: #0d1128; font-weight: 600; color: #00d4ff; font-size: 0.75em; text-transform: uppercase; border-radius: 8px 8px 0 0; }
-        .per-trade-row:hover { background: rgba(0,212,255,0.03); }
-        .per-trade-symbol { font-weight: 700; }
-        .per-trade-dir { font-size: 0.75em; }
-        .progress-bar-wrap { height: 6px; background: #1a1f3a; border-radius: 3px; overflow: hidden; margin-top: 4px; }
-        .progress-bar { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
-        .progress-bar.fees { background: #ff9800; }
-        .progress-bar.funding { background: #00bcd4; }
-        .progress-bar.pnl { background: #00e676; }
-        .progress-bar.loss { background: #ff5252; }
-
-        /* ===== MODAL STYLES ===== */
-        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); z-index: 9999; display: flex; align-items: center; justify-content: center; }
-        .modal-box { background: linear-gradient(135deg, #1a1f3a, #0f1535); border-radius: 20px; padding: 35px; border: 1px solid #2a2f5a; max-width: 480px; width: 90%; position: relative; box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
-        .modal-box h2 { font-size: 1.4em; background: linear-gradient(135deg, #00d4ff, #7b2cbf); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px; }
-        .modal-sub { color: #8892b0; font-size: 0.9em; margin-bottom: 25px; }
-        .modal-close { position: absolute; top: 18px; right: 20px; background: none; border: none; color: #8892b0; font-size: 1.6em; cursor: pointer; line-height: 1; transition: color 0.2s; }
-        .modal-close:hover { color: #ff5252; }
-        .form-group { margin-bottom: 18px; }
-        .form-label { display: block; font-size: 0.8em; color: #8892b0; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
-        .form-input { width: 100%; padding: 12px 14px; background: #0d1128; border: 1px solid #2a2f5a; border-radius: 10px; color: #e0e0e0; font-size: 0.95em; font-family: 'Segoe UI', monospace; transition: border-color 0.2s; }
-        .form-input:focus { outline: none; border-color: #00d4ff; }
-        .form-input::placeholder { color: #555; }
-        .modal-actions { display: flex; gap: 12px; margin-top: 25px; }
-        .btn { flex: 1; padding: 12px 20px; border-radius: 10px; font-size: 0.95em; font-weight: 600; cursor: pointer; border: none; transition: all 0.2s; }
-        .btn-primary { background: linear-gradient(135deg, #00d4ff, #7b2cbf); color: #fff; }
-        .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
-        .btn-secondary { background: #1a1f3a; color: #8892b0; border: 1px solid #2a2f5a; }
-        .btn-secondary:hover { border-color: #00d4ff; color: #00d4ff; }
-        .mode-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 20px; font-size: 0.75em; font-weight: 600; }
-        .mode-badge.virtual { background: rgba(0,212,255,0.15); color: #00d4ff; }
-        .mode-badge.real { background: rgba(0,230,118,0.15); color: #00e676; }
-        .api-status { font-size: 0.8em; color: #8892b0; margin-top: 4px; }
-
-        @media (max-width: 768px) {
-            .balance-section { grid-template-columns: 1fr; }
-            .stats-grid { grid-template-columns: repeat(2, 1fr); }
-            .trade-details { grid-template-columns: repeat(2, 1fr); }
-            .money-flow-grid { grid-template-columns: 1fr; }
-            .per-trade-row { grid-template-columns: 60px 60px 1fr 1fr; }
-            .per-trade-row .hide-mobile { display: none; }
-            .modal-box { padding: 25px 20px; }
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<title>Trading Bot 3 Dashboard</title>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#0a0e1a;color:#e0e0e0;min-height:100vh}
+.container{max-width:1400px;margin:0 auto;padding:20px}
+.header{display:flex;justify-content:space-between;align-items:center;padding:20px 25px;background:linear-gradient(135deg,#1a1f3a,#0f1535);border-radius:16px;margin-bottom:20px;border:1px solid #2a2f5a;flex-wrap:wrap;gap:12px}
+.header h1{font-size:1.5em;background:linear-gradient(135deg,#00d4ff,#7b2cbf);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.status{display:flex;align-items:center;gap:8px;font-size:.9em}
+.dot{width:10px;height:10px;border-radius:50%;background:#f44336;box-shadow:0 0 8px #f44336;transition:all .3s}
+.dot.online{background:#00e676;box-shadow:0 0 8px #00e676}
+.dot.offline{background:#ff9800;box-shadow:0 0 8px #ff9800}
+.balance-section{display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-bottom:20px}
+.balance-card{background:linear-gradient(135deg,#1a1f3a,#0f1535);border-radius:16px;padding:25px;border:1px solid #2a2f5a;position:relative;overflow:hidden}
+.balance-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#00d4ff,#7b2cbf)}
+.balance-label{font-size:.85em;color:#8892b0;text-transform:uppercase;letter-spacing:1px}
+.balance-value{font-size:2.2em;font-weight:700;color:#fff;margin-top:5px}
+.balance-change{font-size:1em;margin-top:8px;font-weight:600}
+.settings-section{display:grid;grid-template-columns:repeat(3,1fr);gap:15px;margin-bottom:20px}
+.settings-card{background:linear-gradient(135deg,#1a1f3a,#0f1535);border-radius:16px;padding:20px;border:1px solid #2a2f5a;position:relative;overflow:hidden}
+.settings-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#ffd740,#ff9800)}
+.settings-label{font-size:.8em;color:#8892b0;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
+.settings-value{font-size:1.8em;font-weight:700;color:#fff;margin-bottom:8px}
+.settings-sub{font-size:.8em;color:#8892b0}
+.slider-row{display:flex;align-items:center;gap:12px;margin:10px 0}
+input[type=range]{flex:1;-webkit-appearance:none;height:8px;border-radius:4px;background:#2a2f5a;outline:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:linear-gradient(135deg,#00d4ff,#7b2cbf);cursor:pointer;box-shadow:0 0 10px rgba(0,212,255,.5)}
+input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;background:linear-gradient(135deg,#00d4ff,#7b2cbf);cursor:pointer;border:none}
+.num-input{width:70px;padding:8px 10px;background:#0d1128;border:1px solid #2a2f5a;border-radius:8px;color:#fff;font-size:.95em;text-align:center;font-weight:600}
+.num-input:focus{outline:none;border-color:#00d4ff}
+.green{color:#00e676}.red{color:#ff5252}.orange{color:#ff9800}.cyan{color:#00bcd4}.purple{color:#b388ff}.yellow{color:#ffd740}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px}
+.stat-box{background:#1a1f3a;border-radius:12px;padding:16px;text-align:center;border:1px solid #2a2f5a}
+.stat-label{font-size:.75em;color:#8892b0;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+.stat-value{font-size:1.4em;font-weight:700;color:#fff}
+.section{background:#1a1f3a;border-radius:16px;padding:20px;margin-bottom:20px;border:1px solid #2a2f5a}
+.section-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.section-title{font-size:1.1em;color:#00d4ff;display:flex;align-items:center;gap:8px}
+.section-count{background:#0d1128;padding:4px 12px;border-radius:20px;font-size:.85em;color:#8892b0}
+.trade-list{display:flex;flex-direction:column;gap:10px}
+.trade-card{background:#0d1128;border-radius:12px;padding:16px;border-left:4px solid #00d4ff}
+.trade-card.LONG{border-left-color:#00e676}.trade-card.SHORT{border-left-color:#ff5252}
+.trade-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.trade-symbol{font-size:1.15em;font-weight:700}.trade-time{font-size:.75em;color:#8892b0;margin-bottom:12px}
+.trade-badges{display:flex;gap:8px}
+.badge{padding:4px 10px;border-radius:20px;font-size:.75em;font-weight:600;text-transform:uppercase}
+.badge.LONG{background:rgba(0,230,118,.15);color:#00e676}.badge.SHORT{background:rgba(255,82,82,.15);color:#ff5252}
+.badge.OPEN{background:rgba(0,212,255,.15);color:#00d4ff}.badge.STOP_LOSS{background:rgba(255,152,0,.15);color:#ff9800}
+.badge.TRAILING_STOP{background:rgba(0,188,212,.15);color:#00bcd4}.badge.CLOSED{background:rgba(0,230,118,.15);color:#00e676}
+.trade-details{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px}
+.detail-item{display:flex;flex-direction:column;gap:2px}.detail-label{font-size:.7em;color:#8892b0;text-transform:uppercase}
+.detail-value{font-size:.95em;font-weight:600}.pnl-positive{color:#00e676}.pnl-negative{color:#ff5252}
+table{width:100%;border-collapse:collapse;font-size:.85em}
+th{background:#0d1128;padding:12px 10px;text-align:left;color:#00d4ff;font-weight:600;text-transform:uppercase;font-size:.75em;position:sticky;top:0}
+td{padding:10px;border-bottom:1px solid #2a2f5a}tr:hover td{background:rgba(0,212,255,.03)}
+.empty-state{text-align:center;padding:40px;color:#8892b0}.empty-state .icon{font-size:3em;margin-bottom:10px;opacity:.5}
+.last-update{font-size:.75em;color:#8892b0;text-align:right;margin-top:10px}
+.tabs-nav{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap}
+.tab-btn{background:#1a1f3a;border:1px solid #2a2f5a;color:#8892b0;padding:10px 20px;border-radius:10px;cursor:pointer;font-size:.9em;font-weight:600;transition:all .2s;display:flex;align-items:center;gap:8px}
+.tab-btn:hover{border-color:#00d4ff;color:#00d4ff}.tab-btn.active{background:linear-gradient(135deg,#00d4ff,#7b2cbf);color:#fff;border-color:transparent}
+.tab-content{display:none}.tab-content.active{display:block}
+.money-flow-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:15px;margin-bottom:20px}
+.flow-card{background:linear-gradient(135deg,#0d1128,#1a1f3a);border-radius:14px;padding:20px;border:1px solid #2a2f5a;position:relative;overflow:hidden}
+.flow-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#00d4ff,#7b2cbf)}
+.flow-card.fees::before{background:linear-gradient(90deg,#ff9800,#ff1744)}
+.flow-card.funding::before{background:linear-gradient(90deg,#00bcd4,#00e676)}
+.flow-card.floating::before{background:linear-gradient(90deg,#b388ff,#7b2cbf)}
+.flow-card.closed::before{background:linear-gradient(90deg,#00e676,#00d4ff)}
+.flow-label{font-size:.8em;color:#8892b0;text-transform:uppercase;letter-spacing:1px;display:flex;align-items:center;gap:6px}
+.flow-value{font-size:1.8em;font-weight:700;margin-top:8px}.flow-sub{font-size:.8em;color:#8892b0;margin-top:6px}
+.flow-breakdown{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;padding-top:10px;border-top:1px solid #2a2f5a}
+.flow-item{display:flex;justify-content:space-between;font-size:.8em}.flow-item-label{color:#8892b0}.flow-item-value{font-weight:600}
+.sankey-flow{display:flex;flex-direction:column;gap:12px;margin-top:20px}
+.sankey-row{display:flex;align-items:center;gap:12px}.sankey-label{width:160px;font-size:.85em;color:#8892b0;text-align:right}
+.sankey-bar-wrap{flex:1;height:28px;background:#1a1f3a;border-radius:6px;overflow:hidden;position:relative}
+.sankey-bar{height:100%;border-radius:6px;transition:width .5s ease;display:flex;align-items:center;padding-left:10px;font-size:.8em;font-weight:700;color:#fff;white-space:nowrap}
+.sankey-bar.income{background:linear-gradient(90deg,#00e676,#00d4ff)}.sankey-bar.expense{background:linear-gradient(90deg,#ff5252,#ff9800)}.sankey-bar.neutral{background:linear-gradient(90deg,#b388ff,#7b2cbf)}
+.sankey-value{width:100px;font-size:.85em;font-weight:700;text-align:left}.sankey-divider{height:1px;background:#2a2f5a;margin:8px 0}
+.sankey-net{font-size:1.2em;font-weight:700;padding:10px 0;border-top:2px solid #2a2f5a;margin-top:8px;display:flex;justify-content:space-between}
+.sankey-net-label{color:#8892b0}.sankey-net-value{font-size:1.3em}
+.per-trade-row{display:grid;grid-template-columns:60px 80px 1fr 1fr 1fr 1fr 1fr;gap:10px;padding:10px;border-bottom:1px solid #2a2f5a;align-items:center;font-size:.85em}
+.per-trade-row.header{background:#0d1128;font-weight:600;color:#00d4ff;font-size:.75em;text-transform:uppercase;border-radius:8px 8px 0 0}
+.per-trade-row:hover{background:rgba(0,212,255,.03)}
+.modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.85);backdrop-filter:blur(8px);z-index:9999;display:flex;align-items:center;justify-content:center}
+.modal-box{background:linear-gradient(135deg,#1a1f3a,#0f1535);border-radius:20px;padding:35px;border:1px solid #2a2f5a;max-width:480px;width:90%;position:relative;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.modal-box h2{font-size:1.4em;background:linear-gradient(135deg,#00d4ff,#7b2cbf);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px}
+.modal-sub{color:#8892b0;font-size:.9em;margin-bottom:25px}
+.modal-close{position:absolute;top:18px;right:20px;background:none;border:none;color:#8892b0;font-size:1.6em;cursor:pointer;line-height:1;transition:color .2s}
+.modal-close:hover{color:#ff5252}.form-group{margin-bottom:18px}
+.form-label{display:block;font-size:.8em;color:#8892b0;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+.form-input{width:100%;padding:12px 14px;background:#0d1128;border:1px solid #2a2f5a;border-radius:10px;color:#e0e0e0;font-size:.95em;font-family:'Segoe UI',monospace;transition:border-color .2s}
+.form-input:focus{outline:none;border-color:#00d4ff}.modal-actions{display:flex;gap:12px;margin-top:25px}
+.btn{flex:1;padding:12px 20px;border-radius:10px;font-size:.95em;font-weight:600;cursor:pointer;border:none;transition:all .2s}
+.btn-primary{background:linear-gradient(135deg,#00d4ff,#7b2cbf);color:#fff}.btn-primary:hover{opacity:.9;transform:translateY(-1px)}
+.btn-secondary{background:#1a1f3a;color:#8892b0;border:1px solid #2a2f5a}.btn-secondary:hover{border-color:#00d4ff;color:#00d4ff}
+.mode-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:.75em;font-weight:600}
+.mode-badge.virtual{background:rgba(0,212,255,.15);color:#00d4ff}.mode-badge.real{background:rgba(0,230,118,.15);color:#00e676}
+.api-status{font-size:.8em;color:#8892b0;margin-top:4px}.save-indicator{font-size:.75em;color:#00e676;margin-top:6px;opacity:0;transition:opacity .3s}
+.save-indicator.show{opacity:1}
+.position-size-display{font-size:2em;font-weight:700;color:#ffd740;margin-bottom:8px}
+.last-seen{font-size:.75em;color:#ff9800;margin-top:4px}
+@media(max-width:768px){.balance-section,.settings-section{grid-template-columns:1fr}.stats-grid{grid-template-columns:repeat(2,1fr)}.trade-details{grid-template-columns:repeat(2,1fr)}.money-flow-grid{grid-template-columns:1fr}.per-trade-row{grid-template-columns:60px 60px 1fr 1fr}.per-trade-row .hide-mobile{display:none}.modal-box{padding:25px 20px}}
+</style>
+<base target="_blank">
 <base target="_blank">
 </head>
 <body>
-    <!-- ===== MODAL ===== -->
-    <div class="modal-overlay" id="apiModal">
-        <div class="modal-box">
-            <button class="modal-close" id="modalClose" title="Виртуальный режим">&times;</button>
-            <h2>🔑 API Bybit</h2>
-            <div class="modal-sub">Введите ключи для отображения реального баланса и сделок. Или закройте окно для виртуального режима ($2000).</div>
-            <div class="form-group">
-                <label class="form-label">API Key</label>
-                <input type="text" class="form-input" id="apiKey" placeholder="Ваш API Key" autocomplete="off">
-            </div>
-            <div class="form-group">
-                <label class="form-label">API Secret</label>
-                <input type="password" class="form-input" id="apiSecret" placeholder="Ваш API Secret" autocomplete="off">
-            </div>
-            <div class="form-group">
-                <label class="form-label">Тип аккаунта</label>
-                <select class="form-input" id="accountType" style="cursor:pointer;">
-                    <option value="UNIFIED">Unified Trading Account</option>
-                    <option value="CONTRACT">Contract Account</option>
-                </select>
-            </div>
-            <div class="modal-actions">
-                <button class="btn btn-secondary" id="btnVirtual">Виртуальный режим</button>
-                <button class="btn btn-primary" id="btnConnect">Подключить</button>
-            </div>
-        </div>
-    </div>
-
-    <div class="container">
-        <div class="header">
-            <div>
-                <h1>Trading Bot 3</h1>
-                <div class="api-status" id="apiStatus">Режим: <span class="mode-badge virtual" id="modeBadge">🎮 Виртуальный</span></div>
-            </div>
-            <div class="status">
-                <span class="dot" id="statusDot"></span>
-                <span id="statusText">Подключение...</span>
-            </div>
-        </div>
-
-        <div class="balance-section">
-            <div class="balance-card">
-                <div class="balance-label">Текущий баланс</div>
-                <div class="balance-value" id="balance">$2000</div>
-                <div class="balance-change" id="pnlChange"><span class="green">+$0 (0%)</span></div>
-            </div>
-            <div class="balance-card">
-                <div class="balance-label">Доступно для торговли</div>
-                <div class="balance-value" id="available">$2000</div>
-            </div>
-        </div>
-
-        <div class="stats-grid">
-            <div class="stat-box">
-                <div class="stat-label">Открыто позиций</div>
-                <div class="stat-value" id="openCount">0</div>
-            </div>
-            <div class="stat-box">
-                <div class="stat-label">Всего сделок</div>
-                <div class="stat-value" id="totalTrades">0</div>
-            </div>
-            <div class="stat-box">
-                <div class="stat-label">Win Rate</div>
-                <div class="stat-value" id="winRate">0%</div>
-            </div>
-            <div class="stat-box">
-                <div class="stat-label">Прибыльных</div>
-                <div class="stat-value green" id="winCount">0</div>
-            </div>
-            <div class="stat-box">
-                <div class="stat-label">Убыточных</div>
-                <div class="stat-value red" id="lossCount">0</div>
-            </div>
-            <div class="stat-box">
-                <div class="stat-label">Ликвидировано</div>
-                <div class="stat-value red" id="liqCount">0</div>
-            </div>
-        </div>
-
-        <div class="tabs-nav">
-            <button class="tab-btn active" data-tab="trades" onclick="switchTab('trades')">📊 Сделки</button>
-            <button class="tab-btn" data-tab="moneyflow" onclick="switchTab('moneyflow')">💰 Поток денег</button>
-        </div>
-
-        <div id="tab-trades" class="tab-content active">
-            <div class="section">
-                <div class="section-header">
-                    <div class="section-title">Открытые позиции</div>
-                    <div class="section-count" id="openCountHeader">0</div>
-                </div>
-                <div class="trade-list" id="openTradesList">
-                    <div class="empty-state"><div class="icon">📭</div>Нет открытых позиций</div>
-                </div>
-            </div>
-
-            <div class="section">
-                <div class="section-header">
-                    <div class="section-title">История сделок</div>
-                    <div class="section-count" id="historyCount">0</div>
-                </div>
-                <div style="overflow-x:auto">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Время откр.</th>
-                                <th>Время закр.</th>
-                                <th>Монета</th>
-                                <th>Плечо</th>
-                                <th>Напр.</th>
-                                <th>Вход</th>
-                                <th>Выход</th>
-                                <th>Маржа</th>
-                                <th>P&L $</th>
-                                <th>P&L %</th>
-                                <th>Статус</th>
-                            </tr>
-                        </thead>
-                        <tbody id="historyTable">
-                            <tr><td colspan="11" class="empty-state"><div class="icon">📊</div>История пуста</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-                <div class="last-update" id="lastUpdate">Обновлено: --</div>
-            </div>
-        </div>
-
-        <div id="tab-moneyflow" class="tab-content">
-            <div class="section">
-                <div class="section-header">
-                    <div class="section-title">💰 Куда уходят деньги (Бот 4)</div>
-                </div>
-
-                <div class="money-flow-grid">
-                    <div class="flow-card fees">
-                        <div class="flow-label">🔴 Комиссии (всего)</div>
-                        <div class="flow-value red" id="totalFees">$0</div>
-                        <div class="flow-sub">Вход + выход + открытие + закрытие</div>
-                        <div class="flow-breakdown">
-                            <div class="flow-item"><span class="flow-item-label">Вход</span><span class="flow-item-value orange" id="feesEntry">$0</span></div>
-                            <div class="flow-item"><span class="flow-item-label">Выход</span><span class="flow-item-value orange" id="feesExit">$0</span></div>
-                            <div class="flow-item"><span class="flow-item-label">Открытие</span><span class="flow-item-value orange" id="feesOpen">$0</span></div>
-                            <div class="flow-item"><span class="flow-item-label">Закрытие</span><span class="flow-item-value orange" id="feesClose">$0</span></div>
-                        </div>
-                    </div>
-
-                    <div class="flow-card funding">
-                        <div class="flow-label">🔵 Фандинг (всего)</div>
-                        <div class="flow-value cyan" id="totalFunding">$0</div>
-                        <div class="flow-sub">Накопленный фандинг по всем сделкам</div>
-                        <div class="flow-breakdown">
-                            <div class="flow-item"><span class="flow-item-label">Положительный</span><span class="flow-item-value green" id="fundingPositive">$0</span></div>
-                            <div class="flow-item"><span class="flow-item-label">Отрицательный</span><span class="flow-item-value red" id="fundingNegative">$0</span></div>
-                            <div class="flow-item"><span class="flow-item-label">Открытые</span><span class="flow-item-value" id="fundingOpen">$0</span></div>
-                            <div class="flow-item"><span class="flow-item-label">Закрытые</span><span class="flow-item-value" id="fundingClosed">$0</span></div>
-                        </div>
-                    </div>
-
-                    <div class="flow-card floating">
-                        <div class="flow-label">🟣 Плавающая прибыль</div>
-                        <div class="flow-value purple" id="totalFloating">$0</div>
-                        <div class="flow-sub">Нереализованный P&L открытых позиций</div>
-                        <div class="flow-breakdown">
-                            <div class="flow-item"><span class="flow-item-label">Прибыль</span><span class="flow-item-value green" id="floatingProfit">$0</span></div>
-                            <div class="flow-item"><span class="flow-item-label">Убыток</span><span class="flow-item-value red" id="floatingLoss">$0</span></div>
-                            <div class="flow-item"><span class="flow-item-label">Всего позиций</span><span class="flow-item-value" id="floatingCount">0</span></div>
-                            <div class="flow-item"><span class="flow-item-label">Средняя</span><span class="flow-item-value" id="floatingAvg">$0</span></div>
-                        </div>
-                    </div>
-
-                    <div class="flow-card closed">
-                        <div class="flow-label">🟢 Реализованная прибыль</div>
-                        <div class="flow-value green" id="totalClosedPnl">$0</div>
-                        <div class="flow-sub">P&L закрытых сделок (без комиссий и фандинга)</div>
-                        <div class="flow-breakdown">
-                            <div class="flow-item"><span class="flow-item-label">Прибыль</span><span class="flow-item-value green" id="closedProfit">$0</span></div>
-                            <div class="flow-item"><span class="flow-item-label">Убыток</span><span class="flow-item-value red" id="closedLoss">$0</span></div>
-                            <div class="flow-item"><span class="flow-item-label">Всего закрыто</span><span class="flow-item-value" id="closedCount">0</span></div>
-                            <div class="flow-item"><span class="flow-item-label">Средняя</span><span class="flow-item-value" id="closedAvg">$0</span></div>
-                        </div>
-                    </div>
-                </div>
-
-                <div style="margin-top: 20px;">
-                    <div class="section-header">
-                        <div class="section-title">📈 Визуализация потока</div>
-                    </div>
-                    <div class="sankey-flow" id="sankeyFlow">
-                        <div class="sankey-row">
-                            <div class="sankey-label">Начальный баланс</div>
-                            <div class="sankey-bar-wrap">
-                                <div class="sankey-bar income" id="sankeyStart" style="width: 100%">$2000</div>
-                            </div>
-                            <div class="sankey-value" id="sankeyStartVal">$2000</div>
-                        </div>
-                        <div class="sankey-divider"></div>
-                        <div class="sankey-row">
-                            <div class="sankey-label">+ Реализованная прибыль</div>
-                            <div class="sankey-bar-wrap">
-                                <div class="sankey-bar income" id="sankeyClosedPnl" style="width: 0%">$0</div>
-                            </div>
-                            <div class="sankey-value green" id="sankeyClosedPnlVal">$0</div>
-                        </div>
-                        <div class="sankey-row">
-                            <div class="sankey-label">+ Плавающая прибыль</div>
-                            <div class="sankey-bar-wrap">
-                                <div class="sankey-bar neutral" id="sankeyFloating" style="width: 0%">$0</div>
-                            </div>
-                            <div class="sankey-value purple" id="sankeyFloatingVal">$0</div>
-                        </div>
-                        <div class="sankey-row">
-                            <div class="sankey-label">− Комиссии</div>
-                            <div class="sankey-bar-wrap">
-                                <div class="sankey-bar expense" id="sankeyFees" style="width: 0%">$0</div>
-                            </div>
-                            <div class="sankey-value red" id="sankeyFeesVal">$0</div>
-                        </div>
-                        <div class="sankey-row">
-                            <div class="sankey-label">− Фандинг</div>
-                            <div class="sankey-bar-wrap">
-                                <div class="sankey-bar expense" id="sankeyFunding" style="width: 0%">$0</div>
-                            </div>
-                            <div class="sankey-value red" id="sankeyFundingVal">$0</div>
-                        </div>
-                        <div class="sankey-divider"></div>
-                        <div class="sankey-net">
-                            <span class="sankey-net-label">ИТОГО ТЕКУЩИЙ БАЛАНС</span>
-                            <span class="sankey-net-value" id="sankeyNet">$1000</span>
-                        </div>
-                        <div class="sankey-net" style="border-top: none; padding-top: 0;">
-                            <span class="sankey-net-label">Дрейф (баланс − расчёт)</span>
-                            <span class="sankey-net-value" id="sankeyDrift" style="color: #8892b0;">$0</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="per-trade-breakdown" style="margin-top: 20px;">
-                    <div class="section-header">
-                        <div class="section-title">📋 Разбивка по сделкам</div>
-                    </div>
-                    <div style="overflow-x:auto">
-                        <div class="per-trade-row header">
-                            <div>Монета</div>
-                            <div>Напр.</div>
-                            <div class="hide-mobile">Комиссии</div>
-                            <div class="hide-mobile">Фандинг</div>
-                            <div>P&L</div>
-                            <div class="hide-mobile">Всего</div>
-                            <div class="hide-mobile">% от маржи</div>
-                        </div>
-                        <div id="perTradeBreakdown">
-                            <div class="empty-state" style="padding: 30px;"><div class="icon">📊</div>Нет данных</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyDn3khNbagwGPKSkup5nv12H9n6q8mvv9g",
-            authDomain: "market-sim-350b1.firebaseapp.com",
-            projectId: "market-sim-350b1",
-            storageBucket: "market-sim-350b1.firebasestorage.app",
-            messagingSenderId: "259052430410",
-            appId: "1:259052430410:web:132cff02cf988294d032b3"
-        };
-
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
-
-        // ===== MODE STATE =====
-        let isRealMode = false;
-        let apiCredentials = null;
-        let bybitPositions = [];
-        let bybitBalance = { wallet: 0, available: 0 };
-
-        let state = {
-            balance: 2000,
-            available_balance: 2000,
-            initial_balance: 2000,
-            open_trades: [],
-            closed_trades: [],
-            total_trades: 0,
-            total_fees_paid: 0,
-            total_funding_paid: 0,
-            realized_pnl: 0,
-            unrealized_pnl: 0
-        };
-
-        const INITIAL_VIRTUAL_BALANCE = 2000;
-
-        const fmtMoney = (v) => {
-            const num = parseFloat(v) || 0;
-            return '$' + num.toFixed(4);
-        };
-
-        const fmtPct = (v) => {
-            const num = parseFloat(v) || 0;
-            return (num >= 0 ? '+' : '') + num.toFixed(2) + '%';
-        };
-
-        const fmtTime = (iso) => {
-            if (!iso) return '--';
-            const d = new Date(iso);
-            return d.toLocaleString('ru-RU', { 
-                day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit'
-            });
-        };
-
-        // ===== BYBIT API HELPERS =====
-        function generateSignature(apiSecret, timestamp, recvWindow, queryString) {
-            const message = timestamp + apiSecret + recvWindow + queryString;
-            return CryptoJS.HmacSHA256(message, apiSecret).toString();
-        }
-
-        async function fetchBybitBalance(creds) {
-            try {
-                const timestamp = Date.now().toString();
-                const recvWindow = '5000';
-                const query = `accountType=${creds.accountType}`;
-                const sign = generateSignature(creds.apiSecret, timestamp, recvWindow, query);
-
-                const resp = await fetch(`https://api.bybit.com/v5/account/wallet-balance?${query}`, {
-                    headers: {
-                        'X-BAPI-API-KEY': creds.apiKey,
-                        'X-BAPI-TIMESTAMP': timestamp,
-                        'X-BAPI-SIGN': sign,
-                        'X-BAPI-RECV-WINDOW': recvWindow
-                    }
-                });
-                const data = await resp.json();
-                if (data.retCode === 0 && data.result && data.result.list && data.result.list[0]) {
-                    const acc = data.result.list[0];
-                    return {
-                        wallet: parseFloat(acc.totalEquity) || 0,
-                        available: parseFloat(acc.totalAvailableBalance) || 0
-                    };
-                }
-                return null;
-            } catch (e) {
-                console.error('Bybit balance error:', e);
-                return null;
-            }
-        }
-
-        async function fetchBybitPositions(creds) {
-            try {
-                const timestamp = Date.now().toString();
-                const recvWindow = '5000';
-                const query = 'category=linear&limit=200';
-                const sign = generateSignature(creds.apiSecret, timestamp, recvWindow, query);
-
-                const resp = await fetch(`https://api.bybit.com/v5/position/list?${query}`, {
-                    headers: {
-                        'X-BAPI-API-KEY': creds.apiKey,
-                        'X-BAPI-TIMESTAMP': timestamp,
-                        'X-BAPI-SIGN': sign,
-                        'X-BAPI-RECV-WINDOW': recvWindow
-                    }
-                });
-                const data = await resp.json();
-                if (data.retCode === 0 && data.result && data.result.list) {
-                    return data.result.list.filter(p => parseFloat(p.size) !== 0);
-                }
-                return [];
-            } catch (e) {
-                console.error('Bybit positions error:', e);
-                return [];
-            }
-        }
-
-        // ===== MODAL LOGIC =====
-        const modal = document.getElementById('apiModal');
-        const modalClose = document.getElementById('modalClose');
-        const btnVirtual = document.getElementById('btnVirtual');
-        const btnConnect = document.getElementById('btnConnect');
-        const apiKeyInput = document.getElementById('apiKey');
-        const apiSecretInput = document.getElementById('apiSecret');
-        const accountTypeInput = document.getElementById('accountType');
-        const modeBadge = document.getElementById('modeBadge');
-        const apiStatus = document.getElementById('apiStatus');
-
-        function setVirtualMode() {
-            isRealMode = false;
-            apiCredentials = null;
-            modal.style.display = 'none';
-            modeBadge.className = 'mode-badge virtual';
-            modeBadge.textContent = '🎮 Виртуальный';
-            apiStatus.innerHTML = 'Режим: <span class="mode-badge virtual" id="modeBadge">🎮 Виртуальный</span>';
-            state.balance = INITIAL_VIRTUAL_BALANCE;
-            state.available_balance = INITIAL_VIRTUAL_BALANCE;
-            state.initial_balance = INITIAL_VIRTUAL_BALANCE;
-            updateUI();
-        }
-
-        async function setRealMode() {
-            const key = apiKeyInput.value.trim();
-            const secret = apiSecretInput.value.trim();
-            const accType = accountTypeInput.value;
-
-            if (!key || !secret) {
-                alert('Введите API Key и API Secret');
-                return;
-            }
-
-            apiCredentials = { apiKey: key, apiSecret: secret, accountType: accType };
-
-            // Test connection
-            const bal = await fetchBybitBalance(apiCredentials);
-            if (!bal) {
-                alert('Не удалось подключиться к Bybit. Проверьте ключи.');
-                return;
-            }
-
-            isRealMode = true;
-            bybitBalance = bal;
-            modal.style.display = 'none';
-            modeBadge.className = 'mode-badge real';
-            modeBadge.textContent = '🔴 Реальный';
-            apiStatus.innerHTML = 'Режим: <span class="mode-badge real" id="modeBadge">🔴 Реальный</span>';
-
-            state.balance = bal.wallet;
-            state.available_balance = bal.available;
-            state.initial_balance = bal.wallet;
-
-            await refreshRealData();
-            updateUI();
-        }
-
-        modalClose.addEventListener('click', setVirtualMode);
-        btnVirtual.addEventListener('click', setVirtualMode);
-        btnConnect.addEventListener('click', setRealMode);
-
-        // Close modal on Escape
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && modal.style.display !== 'none') {
-                setVirtualMode();
-            }
-        });
-
-        // ===== REAL DATA REFRESH =====
-        async function refreshRealData() {
-            if (!isRealMode || !apiCredentials) return;
-
-            const bal = await fetchBybitBalance(apiCredentials);
-            if (bal) {
-                bybitBalance = bal;
-                state.balance = bal.wallet;
-                state.available_balance = bal.available;
-            }
-
-            const positions = await fetchBybitPositions(apiCredentials);
-            bybitPositions = positions;
-
-            // Convert Bybit positions to our trade format
-            state.open_trades = positions.map(p => {
-                const side = p.side === 'Buy' ? 'LONG' : 'SHORT';
-                const entryPrice = parseFloat(p.avgPrice) || parseFloat(p.entryPrice) || 0;
-                const markPrice = parseFloat(p.markPrice) || entryPrice;
-                const size = parseFloat(p.size) || 0;
-                const leverage = parseFloat(p.leverage) || 10;
-                const notional = size * entryPrice;
-                const margin = notional / leverage;
-
-                let pnl = 0;
-                if (side === 'LONG') {
-                    pnl = (markPrice - entryPrice) * size;
-                } else {
-                    pnl = (entryPrice - markPrice) * size;
-                }
-                const pnlPct = entryPrice > 0 ? (pnl / margin) * 100 : 0;
-
-                return {
-                    id: p.symbol + '_' + Date.now(),
-                    symbol: p.symbol,
-                    direction: side,
-                    entry_price: entryPrice,
-                    current_price: markPrice,
-                    quantity: size,
-                    leverage: leverage,
-                    margin: margin,
-                    notional: notional,
-                    pnl: pnl,
-                    pnl_percent: pnlPct,
-                    stop_loss: parseFloat(p.stopLoss) || 0,
-                    trailing_stop: parseFloat(p.trailingStop) || 0,
-                    trailing_level: -1,
-                    highest_profit_pct: 0,
-                    open_time: new Date().toISOString(),
-                    status: 'OPEN',
-                    entry_fee: 0,
-                    exit_fee: 0,
-                    total_fees: 0,
-                    funding_paid: 0,
-                    total_funding: 0
-                };
-            });
-
-            state.unrealized_pnl = state.open_trades.reduce((sum, t) => sum + (parseFloat(t.pnl) || 0), 0);
-        }
-
-        // Periodic refresh for real mode
-        setInterval(async () => {
-            if (isRealMode) {
-                await refreshRealData();
-                updateUI();
-            }
-        }, 5000);
-
-        function switchTab(tab) {
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-            document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
-            document.getElementById(`tab-${tab}`).classList.add('active');
-        }
-
-        function calcMoneyFlow() {
-            const openTrades = state.open_trades || [];
-            const closedTrades = state.closed_trades || [];
-            const allTrades = [...openTrades, ...closedTrades];
-
-            let totalFees = 0;
-            let feesEntry = 0, feesExit = 0, feesOpen = 0, feesClose = 0;
-
-            allTrades.forEach(t => {
-                const entryFee = parseFloat(t.entry_fee) || parseFloat(t.fee_open) || 0;
-                const exitFee = parseFloat(t.exit_fee) || parseFloat(t.fee_close) || 0;
-                const openFee = parseFloat(t.open_fee) || 0;
-                const closeFee = parseFloat(t.close_fee) || 0;
-                const totalFee = parseFloat(t.total_fees) || (entryFee + exitFee + openFee + closeFee);
-
-                totalFees += totalFee;
-                feesEntry += entryFee;
-                feesExit += exitFee;
-                feesOpen += openFee;
-                feesClose += closeFee;
-            });
-
-            let totalFunding = 0;
-            let fundingPositive = 0, fundingNegative = 0;
-            let fundingOpen = 0, fundingClosed = 0;
-
-            allTrades.forEach(t => {
-                const funding = parseFloat(t.funding_paid) || parseFloat(t.total_funding) || 0;
-                totalFunding += funding;
-
-                if (funding > 0) fundingPositive += funding;
-                if (funding < 0) fundingNegative += funding;
-
-                if (t.status === 'OPEN') fundingOpen += funding;
-                else fundingClosed += funding;
-            });
-
-            let totalFloating = 0;
-            let floatingProfit = 0, floatingLoss = 0;
-
-            openTrades.forEach(t => {
-                const pnl = parseFloat(t.pnl) || 0;
-                totalFloating += pnl;
-                if (pnl > 0) floatingProfit += pnl;
-                if (pnl < 0) floatingLoss += pnl;
-            });
-
-            let totalClosedPnl = 0;
-            let closedProfit = 0, closedLoss = 0;
-
-            closedTrades.forEach(t => {
-                const pnl = parseFloat(t.pnl) || 0;
-                totalClosedPnl += pnl;
-                if (pnl > 0) closedProfit += pnl;
-                if (pnl < 0) closedLoss += pnl;
-            });
-
-            return {
-                totalFees, feesEntry, feesExit, feesOpen, feesClose,
-                totalFunding, fundingPositive, fundingNegative, fundingOpen, fundingClosed,
-                totalFloating, floatingProfit, floatingLoss, floatingCount: openTrades.length,
-                totalClosedPnl, closedProfit, closedLoss, closedCount: closedTrades.length
-            };
-        }
-
-        function updateMoneyFlow() {
-            const flow = calcMoneyFlow();
-
-            document.getElementById('totalFees').textContent = fmtMoney(flow.totalFees);
-            document.getElementById('feesEntry').textContent = fmtMoney(flow.feesEntry);
-            document.getElementById('feesExit').textContent = fmtMoney(flow.feesExit);
-            document.getElementById('feesOpen').textContent = fmtMoney(flow.feesOpen);
-            document.getElementById('feesClose').textContent = fmtMoney(flow.feesClose);
-
-            document.getElementById('totalFunding').textContent = fmtMoney(flow.totalFunding);
-            document.getElementById('fundingPositive').textContent = fmtMoney(flow.fundingPositive);
-            document.getElementById('fundingNegative').textContent = fmtMoney(flow.fundingNegative);
-            document.getElementById('fundingOpen').textContent = fmtMoney(flow.fundingOpen);
-            document.getElementById('fundingClosed').textContent = fmtMoney(flow.fundingClosed);
-
-            document.getElementById('totalFloating').textContent = fmtMoney(flow.totalFloating);
-            document.getElementById('floatingProfit').textContent = fmtMoney(flow.floatingProfit);
-            document.getElementById('floatingLoss').textContent = fmtMoney(flow.floatingLoss);
-            document.getElementById('floatingCount').textContent = flow.floatingCount;
-            document.getElementById('floatingAvg').textContent = flow.floatingCount > 0 ? fmtMoney(flow.totalFloating / flow.floatingCount) : '$0';
-
-            document.getElementById('totalClosedPnl').textContent = fmtMoney(flow.totalClosedPnl);
-            document.getElementById('closedProfit').textContent = fmtMoney(flow.closedProfit);
-            document.getElementById('closedLoss').textContent = fmtMoney(flow.closedLoss);
-            document.getElementById('closedCount').textContent = flow.closedCount;
-            document.getElementById('closedAvg').textContent = flow.closedCount > 0 ? fmtMoney(flow.totalClosedPnl / flow.closedCount) : '$0';
-
-            const startBalance = parseFloat(state.initial_balance) || parseFloat(state.wallet_balance) || INITIAL_VIRTUAL_BALANCE;
-            const currentBalance = parseFloat(state.balance) || INITIAL_VIRTUAL_BALANCE;
-            const maxBar = Math.max(startBalance, Math.abs(flow.totalClosedPnl), Math.abs(flow.totalFloating), Math.abs(flow.totalFees), Math.abs(flow.totalFunding), currentBalance);
-
-            const pct = (v) => Math.min(100, Math.max(0, (Math.abs(v) / maxBar) * 100));
-
-            document.getElementById('sankeyStart').style.width = pct(startBalance) + '%';
-            document.getElementById('sankeyStart').textContent = fmtMoney(startBalance);
-            document.getElementById('sankeyStartVal').textContent = fmtMoney(startBalance);
-
-            document.getElementById('sankeyClosedPnl').style.width = pct(flow.totalClosedPnl) + '%';
-            document.getElementById('sankeyClosedPnl').textContent = fmtMoney(flow.totalClosedPnl);
-            document.getElementById('sankeyClosedPnlVal').textContent = fmtMoney(flow.totalClosedPnl);
-            document.getElementById('sankeyClosedPnlVal').className = 'sankey-value ' + (flow.totalClosedPnl >= 0 ? 'green' : 'red');
-
-            document.getElementById('sankeyFloating').style.width = pct(flow.totalFloating) + '%';
-            document.getElementById('sankeyFloating').textContent = fmtMoney(flow.totalFloating);
-            document.getElementById('sankeyFloatingVal').textContent = fmtMoney(flow.totalFloating);
-            document.getElementById('sankeyFloatingVal').className = 'sankey-value ' + (flow.totalFloating >= 0 ? 'purple' : 'red');
-
-            document.getElementById('sankeyFees').style.width = pct(flow.totalFees) + '%';
-            document.getElementById('sankeyFees').textContent = fmtMoney(flow.totalFees);
-            document.getElementById('sankeyFeesVal').textContent = fmtMoney(flow.totalFees);
-
-            document.getElementById('sankeyFunding').style.width = pct(Math.abs(flow.totalFunding)) + '%';
-            document.getElementById('sankeyFunding').textContent = fmtMoney(flow.totalFunding);
-            document.getElementById('sankeyFundingVal').textContent = fmtMoney(flow.totalFunding);
-
-            document.getElementById('sankeyNet').textContent = fmtMoney(currentBalance);
-            document.getElementById('sankeyNet').className = 'sankey-net-value ' + (currentBalance >= startBalance ? 'green' : 'red');
-
-            const calculated = startBalance + flow.totalClosedPnl + flow.totalFloating - flow.totalFees - flow.totalFunding;
-            const drift = currentBalance - calculated;
-            document.getElementById('sankeyDrift').textContent = fmtMoney(drift);
-            document.getElementById('sankeyDrift').style.color = Math.abs(drift) < 0.01 ? '#00e676' : '#ff9800';
-
-            const allTrades = [...(state.open_trades || []), ...(state.closed_trades || [])];
-            const perTradeDiv = document.getElementById('perTradeBreakdown');
-
-            if (allTrades.length === 0) {
-                perTradeDiv.innerHTML = `<div class="empty-state" style="padding: 30px;"><div class="icon">📊</div>Нет данных</div>`;
-            } else {
-                const maxAbsTotal = Math.max(...allTrades.map(t => {
-                    const pnl = parseFloat(t.pnl) || 0;
-                    const fees = parseFloat(t.total_fees) || 0;
-                    const funding = parseFloat(t.funding_paid) || parseFloat(t.total_funding) || 0;
-                    return Math.abs(pnl + fees + funding);
-                }), 0.01);
-
-                perTradeDiv.innerHTML = allTrades.map(t => {
-                    const pnl = parseFloat(t.pnl) || 0;
-                    const fees = parseFloat(t.total_fees) || (parseFloat(t.entry_fee) || 0) + (parseFloat(t.exit_fee) || 0) + (parseFloat(t.open_fee) || 0) + (parseFloat(t.close_fee) || 0);
-                    const funding = parseFloat(t.funding_paid) || parseFloat(t.total_funding) || 0;
-                    const total = pnl + fees + funding;
-                    const margin = parseFloat(t.margin) || 10;
-                    const pctOfMargin = (total / margin) * 100;
-
-                    return `
-                        <div class="per-trade-row">
-                            <div class="per-trade-symbol">${t.symbol}</div>
-                            <div class="per-trade-dir"><span class="badge ${t.direction}">${t.direction}</span></div>
-                            <div class="hide-mobile orange">${fmtMoney(fees)}</div>
-                            <div class="hide-mobile cyan">${fmtMoney(funding)}</div>
-                            <div class="${pnl >= 0 ? 'green' : 'red'}">${pnl >= 0 ? '+' : ''}${fmtMoney(pnl)}</div>
-                            <div class="hide-mobile ${total >= 0 ? 'green' : 'red'}">${total >= 0 ? '+' : ''}${fmtMoney(total)}</div>
-                            <div class="hide-mobile ${total >= 0 ? 'green' : 'red'}">${fmtPct(pctOfMargin)}</div>
-                        </div>
-                    `;
-                }).join('');
-            }
-        }
-
-        function updateUI() {
-            const x = state;
-
-            document.getElementById('balance').textContent = fmtMoney(x.balance);
-            document.getElementById('available').textContent = fmtMoney(x.available_balance);
-
-            const initialBal = parseFloat(x.initial_balance) || parseFloat(x.wallet_balance) || INITIAL_VIRTUAL_BALANCE;
-            const pnl = (parseFloat(x.balance) || 0) - initialBal;
-            const pnlPct = ((pnl / initialBal) * 100);
-            document.getElementById('pnlChange').innerHTML = 
-                `<span class="${pnl >= 0 ? 'green' : 'red'}">${pnl >= 0 ? '+' : ''}${fmtMoney(pnl)} (${pnl >= 0 ? '+' : ''}${pnlPct.toFixed(2)}%)</span>`;
-
-            const openTrades = x.open_trades || [];
-
-            document.getElementById('openCount').textContent = openTrades.length;
-            document.getElementById('openCountHeader').textContent = openTrades.length;
-
-            const totalTrades = x.total_trades || 0;
-            document.getElementById('totalTrades').textContent = totalTrades;
-
-            const closedTrades = x.closed_trades || [];
-            const wins = closedTrades.filter(t => (parseFloat(t.pnl) || 0) > 0).length;
-            const losses = closedTrades.filter(t => (parseFloat(t.pnl) || 0) < 0).length;
-            const liqs = closedTrades.filter(t => t.status === 'LIQUIDATED').length;
-            const totalClosed = closedTrades.length;
-
-            document.getElementById('winCount').textContent = wins;
-            document.getElementById('lossCount').textContent = losses;
-            document.getElementById('liqCount').textContent = liqs;
-
-            document.getElementById('winRate').textContent = totalClosed > 0 
-                ? ((wins / totalClosed) * 100).toFixed(1) + '%' 
-                : '0%';
-
-            const otList = document.getElementById('openTradesList');
-            if (openTrades.length === 0) {
-                otList.innerHTML = `<div class="empty-state"><div class="icon">📭</div>Нет открытых позиций</div>`;
-            } else {
-                otList.innerHTML = openTrades.map(t => `
-                    <div class="trade-card ${t.direction}">
-                        <div class="trade-header">
-                            <span class="trade-symbol">${t.symbol}</span>
-                            <div class="trade-badges">
-                                <span class="badge ${t.direction}">${t.direction}</span>
-                                <span class="badge OPEN">OPEN</span>
-                            </div>
-                        </div>
-                        <div class="trade-time">Зашёл: ${fmtTime(t.open_time)}</div>
-                        <div class="trade-details">
-                            <div class="detail-item">
-                                <span class="detail-label">Плечо</span>
-                                <span class="detail-value">x${t.leverage}</span>
-                            </div>
-                            <div class="detail-item">
-                                <span class="detail-label">Маржа</span>
-                                <span class="detail-value">${fmtMoney(t.margin)}</span>
-                            </div>
-                            <div class="detail-item">
-                                <span class="detail-label">Вход</span>
-                                <span class="detail-value">${fmtMoney(t.entry_price)}</span>
-                            </div>
-                            <div class="detail-item">
-                                <span class="detail-label">Текущая</span>
-                                <span class="detail-value">${fmtMoney(t.current_price)}</span>
-                            </div>
-                            <div class="detail-item">
-                                <span class="detail-label">Стоп</span>
-                                <span class="detail-value" style="color:#ff9800">${fmtMoney(t.stop_loss)}</span>
-                            </div>
-                            <div class="detail-item">
-                                <span class="detail-label">Трейлинг</span>
-                                <span class="detail-value" style="color:#00bcd4">${t.trailing_stop > 0 ? fmtMoney(t.trailing_stop) : '—'}</span>
-                            </div>
-                            <div class="detail-item">
-                                <span class="detail-label">Комиссии</span>
-                                <span class="detail-value">${fmtMoney(t.total_fees)}</span>
-                            </div>
-                            <div class="detail-item">
-                                <span class="detail-label">P&L</span>
-                                <span class="detail-value ${(parseFloat(t.pnl) || 0) >= 0 ? 'pnl-positive' : 'pnl-negative'}">
-                                    ${(parseFloat(t.pnl) || 0) >= 0 ? '+' : ''}${fmtMoney(t.pnl)} (${fmtPct(t.pnl_percent)})
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                `).join('');
-            }
-
-            const histTable = document.getElementById('historyTable');
-            document.getElementById('historyCount').textContent = closedTrades.length;
-
-            if (closedTrades.length === 0) {
-                histTable.innerHTML = `<tr><td colspan="11" class="empty-state"><div class="icon">📊</div>История пуста</td></tr>`;
-            } else {
-                const sorted = [...closedTrades].sort((a, b) => {
-                    const ta = a.close_time ? new Date(a.close_time).getTime() : 0;
-                    const tb = b.close_time ? new Date(b.close_time).getTime() : 0;
-                    return tb - ta;
-                });
-
-                histTable.innerHTML = sorted.map(t => `
-                    <tr>
-                        <td>${fmtTime(t.open_time)}</td>
-                        <td>${fmtTime(t.close_time)}</td>
-                        <td><b>${t.symbol}</b></td>
-                        <td>x${t.leverage}</td>
-                        <td><span class="badge ${t.direction}">${t.direction}</span></td>
-                        <td>${fmtMoney(t.entry_price)}</td>
-                        <td>${fmtMoney(t.exit_price)}</td>
-                        <td>${fmtMoney(t.margin)}</td>
-                        <td class="${(parseFloat(t.pnl) || 0) >= 0 ? 'green' : 'red'}">${(parseFloat(t.pnl) || 0) >= 0 ? '+' : ''}${fmtMoney(t.pnl)}</td>
-                        <td class="${(parseFloat(t.pnl_percent) || 0) >= 0 ? 'green' : 'red'}">${fmtPct(t.pnl_percent)}</td>
-                        <td><span class="badge ${t.status}">${t.status}</span></td>
-                    </tr>
-                `).join('');
-            }
-
-            const dot = document.getElementById('statusDot');
-            const statusText = document.getElementById('statusText');
-
-            if (x.updated_at || isRealMode) {
-                dot.className = 'dot online';
-                statusText.textContent = isRealMode ? 'Bybit API' : 'Онлайн';
-            } else {
-                dot.className = 'dot';
-                statusText.textContent = 'Ожидание данных';
-            }
-
-            document.getElementById('lastUpdate').textContent = 
-                'Обновлено: ' + new Date().toLocaleTimeString('ru-RU');
-
-            updateMoneyFlow();
-        }
-
-        // ✅ Подписка на trading_state/bot3 (для третьего бота)
-        db.collection('trading_state').doc('bot3').onSnapshot((doc) => {
-            if (doc.exists && !isRealMode) {
-                const data = doc.data();
-                state = { ...state, ...data };
-                updateUI();
-            }
-        }, (err) => {
-            console.error('Firestore error:', err);
-            if (!isRealMode) {
-                document.getElementById('statusDot').className = 'dot';
-                document.getElementById('statusText').textContent = 'Ошибка подключения';
-            }
-        });
-    </script>
-    <!-- CryptoJS for HMAC-SHA256 signature generation -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+<div class="modal-overlay" id="apiModal">
+<div class="modal-box">
+<button class="modal-close" id="modalClose" title="Virtual mode">&times;</button>
+<h2>API Bybit</h2>
+<div class="modal-sub">Enter keys for real balance and trading. Close window for virtual mode ($2000).</div>
+<div class="form-group"><label class="form-label">API Key</label><input type="text" class="form-input" id="apiKey" placeholder="Your API Key" autocomplete="off"></div>
+<div class="form-group"><label class="form-label">API Secret</label><input type="password" class="form-input" id="apiSecret" placeholder="Your API Secret" autocomplete="off"></div>
+<div class="form-group"><label class="form-label">Account Type</label><select class="form-input" id="accountType" style="cursor:pointer"><option value="UNIFIED">Unified Trading Account</option><option value="CONTRACT">Contract Account</option></select></div>
+<div class="modal-actions"><button class="btn btn-secondary" id="btnVirtual">Virtual mode</button><button class="btn btn-primary" id="btnConnect">Connect</button></div>
+</div>
+</div>
+
+<div class="container">
+<div class="header">
+<div><h1>Trading Bot 3</h1><div class="api-status" id="apiStatus">Mode: <span class="mode-badge virtual" id="modeBadge">Virtual</span></div><div class="last-seen" id="lastSeen"></div></div>
+<div class="status"><span class="dot" id="statusDot"></span><span id="statusText">Loading...</span></div>
+</div>
+
+<div class="balance-section">
+<div class="balance-card"><div class="balance-label">Current Balance</div><div class="balance-value" id="balance">$2000.00</div><div class="balance-change" id="pnlChange"><span class="green">+$0.00 (0.00%)</span></div></div>
+<div class="balance-card"><div class="balance-label">Available for Trading</div><div class="balance-value" id="available">$2000.00</div></div>
+</div>
+
+<div class="settings-section">
+<div class="settings-card">
+<div class="settings-label">Leverage <span id="leverageVal">10x</span></div>
+<div class="slider-row"><input type="range" id="leverageSlider" min="1" max="100" value="10" step="1"><input type="number" class="num-input" id="leverageInput" min="1" max="100" value="10"></div>
+<div class="settings-sub">1x to 100x</div><div class="save-indicator" id="leverageSaved">Saved to Firebase</div>
+</div>
+<div class="settings-card">
+<div class="settings-label">Margin per Position <span id="marginVal">$10</span></div>
+<div class="slider-row"><input type="range" id="marginSlider" min="1" max="1000" value="10" step="1"><input type="number" class="num-input" id="marginInput" min="1" max="1000" value="10"></div>
+<div class="settings-sub">$1 to $1000</div><div class="save-indicator" id="marginSaved">Saved to Firebase</div>
+</div>
+<div class="settings-card">
+<div class="settings-label">Position Size</div><div class="position-size-display" id="positionSize">$100</div><div class="settings-sub">Margin x Leverage</div>
+</div>
+</div>
+
+<div class="stats-grid">
+<div class="stat-box"><div class="stat-label">Open Positions</div><div class="stat-value" id="openCount">0</div></div>
+<div class="stat-box"><div class="stat-label">Total Trades</div><div class="stat-value" id="totalTrades">0</div></div>
+<div class="stat-box"><div class="stat-label">Win Rate</div><div class="stat-value" id="winRate">0%</div></div>
+<div class="stat-box"><div class="stat-label">Profitable</div><div class="stat-value green" id="winCount">0</div></div>
+<div class="stat-box"><div class="stat-label">Losing</div><div class="stat-value red" id="lossCount">0</div></div>
+<div class="stat-box"><div class="stat-label">Liquidated</div><div class="stat-value red" id="liqCount">0</div></div>
+</div>
+
+<div class="tabs-nav">
+<button class="tab-btn active" data-tab="trades" onclick="switchTab('trades')">Trades</button>
+<button class="tab-btn" data-tab="moneyflow" onclick="switchTab('moneyflow')">Money Flow</button>
+</div>
+
+<div id="tab-trades" class="tab-content active">
+<div class="section">
+<div class="section-header"><div class="section-title">Open Positions</div><div class="section-count" id="openCountHeader">0</div></div>
+<div class="trade-list" id="openTradesList"><div class="empty-state"><div class="icon">📭</div>No open positions</div></div>
+</div>
+<div class="section">
+<div class="section-header"><div class="section-title">Trade History</div><div class="section-count" id="historyCount">0</div></div>
+<div style="overflow-x:auto">
+<table>
+<thead><tr><th>Open Time</th><th>Close Time</th><th>Coin</th><th>Lev</th><th>Dir</th><th>Entry</th><th>Exit</th><th>Margin</th><th>P&L $</th><th>P&L %</th><th>Status</th></tr></thead>
+<tbody id="historyTable"><tr><td colspan="11" class="empty-state"><div class="icon">📊</div>History empty</td></tr></tbody>
+</table>
+</div>
+<div class="last-update" id="lastUpdate">Updated: --</div>
+</div>
+</div>
+
+<div id="tab-moneyflow" class="tab-content">
+<div class="section">
+<div class="section-header"><div class="section-title">Money Flow</div></div>
+<div class="money-flow-grid">
+<div class="flow-card fees">
+<div class="flow-label">Fees (total)</div><div class="flow-value red" id="totalFees">$0</div><div class="flow-sub">Entry + exit + open + close</div>
+<div class="flow-breakdown">
+<div class="flow-item"><span class="flow-item-label">Entry</span><span class="flow-item-value orange" id="feesEntry">$0</span></div>
+<div class="flow-item"><span class="flow-item-label">Exit</span><span class="flow-item-value orange" id="feesExit">$0</span></div>
+<div class="flow-item"><span class="flow-item-label">Open</span><span class="flow-item-value orange" id="feesOpen">$0</span></div>
+<div class="flow-item"><span class="flow-item-label">Close</span><span class="flow-item-value orange" id="feesClose">$0</span></div>
+</div>
+</div>
+<div class="flow-card funding">
+<div class="flow-label">Funding (total)</div><div class="flow-value cyan" id="totalFunding">$0</div><div class="flow-sub">Accumulated funding across all trades</div>
+<div class="flow-breakdown">
+<div class="flow-item"><span class="flow-item-label">Positive</span><span class="flow-item-value green" id="fundingPositive">$0</span></div>
+<div class="flow-item"><span class="flow-item-label">Negative</span><span class="flow-item-value red" id="fundingNegative">$0</span></div>
+<div class="flow-item"><span class="flow-item-label">Open</span><span class="flow-item-value" id="fundingOpen">$0</span></div>
+<div class="flow-item"><span class="flow-item-label">Closed</span><span class="flow-item-value" id="fundingClosed">$0</span></div>
+</div>
+</div>
+<div class="flow-card floating">
+<div class="flow-label">Floating P&L</div><div class="flow-value purple" id="totalFloating">$0</div><div class="flow-sub">Unrealized P&L of open positions</div>
+<div class="flow-breakdown">
+<div class="flow-item"><span class="flow-item-label">Profit</span><span class="flow-item-value green" id="floatingProfit">$0</span></div>
+<div class="flow-item"><span class="flow-item-label">Loss</span><span class="flow-item-value red" id="floatingLoss">$0</span></div>
+<div class="flow-item"><span class="flow-item-label">Positions</span><span class="flow-item-value" id="floatingCount">0</span></div>
+<div class="flow-item"><span class="flow-item-label">Average</span><span class="flow-item-value" id="floatingAvg">$0</span></div>
+</div>
+</div>
+<div class="flow-card closed">
+<div class="flow-label">Realized P&L</div><div class="flow-value green" id="totalClosedPnl">$0</div><div class="flow-sub">Closed trades P&L (without fees and funding)</div>
+<div class="flow-breakdown">
+<div class="flow-item"><span class="flow-item-label">Profit</span><span class="flow-item-value green" id="closedProfit">$0</span></div>
+<div class="flow-item"><span class="flow-item-label">Loss</span><span class="flow-item-value red" id="closedLoss">$0</span></div>
+<div class="flow-item"><span class="flow-item-label">Total closed</span><span class="flow-item-value" id="closedCount">0</span></div>
+<div class="flow-item"><span class="flow-item-label">Average</span><span class="flow-item-value" id="closedAvg">$0</span></div>
+</div>
+</div>
+</div>
+
+<div style="margin-top:20px">
+<div class="section-header"><div class="section-title">Flow Visualization</div></div>
+<div class="sankey-flow" id="sankeyFlow">
+<div class="sankey-row"><div class="sankey-label">Initial Balance</div><div class="sankey-bar-wrap"><div class="sankey-bar income" id="sankeyStart" style="width:100%">$2000</div></div><div class="sankey-value" id="sankeyStartVal">$2000</div></div>
+<div class="sankey-divider"></div>
+<div class="sankey-row"><div class="sankey-label">+ Realized P&L</div><div class="sankey-bar-wrap"><div class="sankey-bar income" id="sankeyClosedPnl" style="width:0%">$0</div></div><div class="sankey-value green" id="sankeyClosedPnlVal">$0</div></div>
+<div class="sankey-row"><div class="sankey-label">+ Floating P&L</div><div class="sankey-bar-wrap"><div class="sankey-bar neutral" id="sankeyFloating" style="width:0%">$0</div></div><div class="sankey-value purple" id="sankeyFloatingVal">$0</div></div>
+<div class="sankey-row"><div class="sankey-label">− Fees</div><div class="sankey-bar-wrap"><div class="sankey-bar expense" id="sankeyFees" style="width:0%">$0</div></div><div class="sankey-value red" id="sankeyFeesVal">$0</div></div>
+<div class="sankey-row"><div class="sankey-label">− Funding</div><div class="sankey-bar-wrap"><div class="sankey-bar expense" id="sankeyFunding" style="width:0%">$0</div></div><div class="sankey-value red" id="sankeyFundingVal">$0</div></div>
+<div class="sankey-divider"></div>
+<div class="sankey-net"><span class="sankey-net-label">CURRENT TOTAL BALANCE</span><span class="sankey-net-value" id="sankeyNet">$2000</span></div>
+<div class="sankey-net" style="border-top:none;padding-top:0"><span class="sankey-net-label">Drift (balance − calc)</span><span class="sankey-net-value" id="sankeyDrift" style="color:#8892b0">$0</span></div>
+</div>
+</div>
+
+<div class="per-trade-breakdown" style="margin-top:20px">
+<div class="section-header"><div class="section-title">Per-trade Breakdown</div></div>
+<div style="overflow-x:auto">
+<div class="per-trade-row header"><div>Coin</div><div>Dir</div><div class="hide-mobile">Fees</div><div class="hide-mobile">Funding</div><div>P&L</div><div class="hide-mobile">Total</div><div class="hide-mobile">% of Margin</div></div>
+<div id="perTradeBreakdown"><div class="empty-state" style="padding:30px"><div class="icon">📊</div>No data</div></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<script>
+const firebaseConfig={apiKey:"AIzaSyDn3khNbagwGPKSkup5nv12H9n6q8mvv9g",authDomain:"market-sim-350b1.firebaseapp.com",projectId:"market-sim-350b1",storageBucket:"market-sim-350b1.firebasestorage.app",messagingSenderId:"259052430410",appId:"1:259052430410:web:132cff02cf988294d032b3"};
+firebase.initializeApp(firebaseConfig);
+const db=firebase.firestore();
+
+let isRealMode=false;
+let apiCredentials=null;
+let settingsDocRef=db.collection('bot3_settings').doc('config');
+let configDocRef=db.collection('bot3_config').doc('default');
+let stateUnsub=null;
+let settingsUnsub=null;
+let configUnsub=null;
+let lastBotUpdateTime=null;
+let dataLoaded=false;
+
+let state={
+  balance:2000,available_balance:2000,initial_balance:2000,
+  open_trades:[],closed_trades:[],total_trades:0,
+  total_fees_paid:0,total_funding_paid:0,realized_pnl:0,unrealized_pnl:0,
+  target_leverage:10,base_notional:10
+};
+const INITIAL_VIRTUAL_BALANCE=2000;
+const OFFLINE_THRESHOLD_MS=5*60*1000; // 5 minutes
+
+const fmtMoney=v=>{const n=parseFloat(v)||0;return '$'+n.toFixed(4)};
+const fmtPct=v=>{const n=parseFloat(v)||0;return(n>=0?'+':'')+n.toFixed(2)+'%'};
+const fmtTime=iso=>{if(!iso)return'--';const d=new Date(iso);return d.toLocaleString('en-GB',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'})};
+
+function generateSignature(apiSecret,timestamp,recvWindow,queryString){
+  return CryptoJS.HmacSHA256(timestamp+apiSecret+recvWindow+queryString,apiSecret).toString();
+}
+
+async function fetchBybitBalance(creds){
+  try{
+    const timestamp=Date.now().toString(),recvWindow='5000',query=`accountType=${creds.accountType}`;
+    const sign=generateSignature(creds.apiSecret,timestamp,recvWindow,query);
+    const resp=await fetch(`https://api.bybit.com/v5/account/wallet-balance?${query}`,{headers:{'X-BAPI-API-KEY':creds.apiKey,'X-BAPI-TIMESTAMP':timestamp,'X-BAPI-SIGN':sign,'X-BAPI-RECV-WINDOW':recvWindow}});
+    const data=await resp.json();
+    if(data.retCode===0&&data.result&&data.result.list&&data.result.list[0]){
+      const acc=data.result.list[0];
+      return{wallet:parseFloat(acc.totalEquity)||0,available:parseFloat(acc.totalAvailableBalance)||0};
+    }
+    return null;
+  }catch(e){console.error('Bybit balance error:',e);return null;}
+}
+
+const modal=document.getElementById('apiModal');
+const modalClose=document.getElementById('modalClose');
+const btnVirtual=document.getElementById('btnVirtual');
+const btnConnect=document.getElementById('btnConnect');
+const apiKeyInput=document.getElementById('apiKey');
+const apiSecretInput=document.getElementById('apiSecret');
+const accountTypeInput=document.getElementById('accountType');
+const modeBadge=document.getElementById('modeBadge');
+
+function applyStateData(data){
+  state={...state,...data};
+  if(data.wallet_balance!==undefined){
+    state.balance=parseFloat(data.wallet_balance)||0;
+  }
+  if(data.available_balance!==undefined){
+    state.available_balance=parseFloat(data.available_balance)||0;
+  }else if(data.wallet_balance!==undefined){
+    state.available_balance=parseFloat(data.wallet_balance)||0;
+  }
+  if(!state.initial_balance||state.initial_balance===0){
+    state.initial_balance=state.balance||INITIAL_VIRTUAL_BALANCE;
+  }
+  if(data.updated_at){
+    lastBotUpdateTime=new Date(data.updated_at);
+  }
+  dataLoaded=true;
+  updateUI();
+}
+
+async function loadStateOnce(){
+  try{
+    const doc=await db.collection('trading_state').doc('bot3').get();
+    if(doc.exists){
+      applyStateData(doc.data());
+    }else{
+      // No data in Firebase yet — show virtual defaults
+      state.balance=INITIAL_VIRTUAL_BALANCE;
+      state.available_balance=INITIAL_VIRTUAL_BALANCE;
+      state.initial_balance=INITIAL_VIRTUAL_BALANCE;
+      dataLoaded=true;
+      updateUI();
+    }
+  }catch(e){
+    console.error('Initial load error:',e);
+    dataLoaded=true;
+    updateUI();
+  }
+}
+
+function startFirebaseListeners(){
+  if(stateUnsub){stateUnsub();stateUnsub=null;}
+  stateUnsub=db.collection('trading_state').doc('bot3').onSnapshot(doc=>{
+    if(doc.exists){
+      applyStateData(doc.data());
+    }
+  },err=>{
+    console.error('Firestore state error:',err);
+  });
+
+  if(configUnsub){configUnsub();configUnsub=null;}
+  configUnsub=configDocRef.onSnapshot(doc=>{
+    if(doc.exists){
+      const cfg=doc.data();
+      if(cfg.enabled&&cfg.api_key){
+        isRealMode=true;
+        modeBadge.className='mode-badge real';
+        modeBadge.textContent='Real';
+        document.getElementById('apiStatus').innerHTML='Mode: <span class="mode-badge real" id="modeBadge">Real</span>';
+      }else{
+        isRealMode=false;
+        modeBadge.className='mode-badge virtual';
+        modeBadge.textContent='Virtual';
+        document.getElementById('apiStatus').innerHTML='Mode: <span class="mode-badge virtual" id="modeBadge">Virtual</span>';
+      }
+    }else{
+      isRealMode=false;
+      modeBadge.className='mode-badge virtual';
+      modeBadge.textContent='Virtual';
+      document.getElementById('apiStatus').innerHTML='Mode: <span class="mode-badge virtual" id="modeBadge">Virtual</span>';
+    }
+    updateStatusDot();
+  },err=>{console.error('Config listener error:',err);});
+}
+
+function updateStatusDot(){
+  const dot=document.getElementById('statusDot');
+  const statusText=document.getElementById('statusText');
+  const lastSeenEl=document.getElementById('lastSeen');
+
+  if(!dataLoaded){
+    dot.className='dot';
+    statusText.textContent='Loading...';
+    lastSeenEl.textContent='';
+    return;
+  }
+
+  if(lastBotUpdateTime){
+    const now=new Date();
+    const diffMs=now-lastBotUpdateTime;
+    const diffMin=Math.floor(diffMs/60000);
+    const diffSec=Math.floor((diffMs%60000)/1000);
+
+    if(diffMs<OFFLINE_THRESHOLD_MS){
+      dot.className='dot online';
+      statusText.textContent=isRealMode?'Bybit API':'Online';
+      lastSeenEl.textContent='';
+    }else{
+      dot.className='dot offline';
+      statusText.textContent='Bot offline';
+      let timeStr='';
+      if(diffMin>0) timeStr=diffMin+' min ';
+      timeStr+=diffSec+' sec ago';
+      lastSeenEl.textContent='Last data: '+fmtTime(lastBotUpdateTime.toISOString())+' ('+timeStr+')';
+    }
+  }else{
+    dot.className='dot';
+    statusText.textContent='Waiting for bot...';
+    lastSeenEl.textContent='';
+  }
+}
+
+setInterval(updateStatusDot,5000);
+
+async function setVirtualMode(){
+  isRealMode=false;apiCredentials=null;
+  modal.style.display='none';
+  modeBadge.className='mode-badge virtual';
+  modeBadge.textContent='Virtual';
+  document.getElementById('apiStatus').innerHTML='Mode: <span class="mode-badge virtual" id="modeBadge">Virtual</span>';
+  try{
+    await configDocRef.set({enabled:false},{merge:true});
+  }catch(e){console.error(e);}
+  state.initial_balance=INITIAL_VIRTUAL_BALANCE;
+  if(!dataLoaded){
+    state.balance=INITIAL_VIRTUAL_BALANCE;
+    state.available_balance=INITIAL_VIRTUAL_BALANCE;
+  }
+  updateUI();
+}
+
+async function setRealMode(){
+  const key=apiKeyInput.value.trim();
+  const secret=apiSecretInput.value.trim();
+  const accType=accountTypeInput.value;
+  if(!key||!secret){alert('Enter API Key and API Secret');return;}
+  apiCredentials={apiKey:key,apiSecret:secret,accountType:accType};
+  const bal=await fetchBybitBalance(apiCredentials);
+  if(!bal){alert('Failed to connect to Bybit. Check your keys.');return;}
+  isRealMode=true;
+  modal.style.display='none';
+  modeBadge.className='mode-badge real';
+  modeBadge.textContent='Real';
+  document.getElementById('apiStatus').innerHTML='Mode: <span class="mode-badge real" id="modeBadge">Real</span>';
+  state.initial_balance=bal.wallet;
+  state.balance=bal.wallet;
+  state.available_balance=bal.available;
+  try{
+    await configDocRef.set({api_key:key,api_secret:secret,accountType:accType,enabled:true},{merge:true});
+  }catch(e){console.error(e);}
+  updateUI();
+}
+
+modalClose.addEventListener('click',setVirtualMode);
+btnVirtual.addEventListener('click',setVirtualMode);
+btnConnect.addEventListener('click',setRealMode);
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&modal.style.display!=='none')setVirtualMode();});
+
+const leverageSlider=document.getElementById('leverageSlider');
+const marginSlider=document.getElementById('marginSlider');
+const leverageInput=document.getElementById('leverageInput');
+const marginInput=document.getElementById('marginInput');
+const leverageVal=document.getElementById('leverageVal');
+const marginVal=document.getElementById('marginVal');
+const positionSize=document.getElementById('positionSize');
+const leverageSaved=document.getElementById('leverageSaved');
+const marginSaved=document.getElementById('marginSaved');
+
+function clamp(val,min,max){return Math.min(max,Math.max(min,parseFloat(val)||min));}
+
+function updatePositionSize(){
+  const lev=parseInt(leverageSlider.value);
+  const marg=parseInt(marginSlider.value);
+  leverageVal.textContent=lev+'x';
+  marginVal.textContent='$'+marg;
+  positionSize.textContent='$'+(lev*marg).toLocaleString();
+}
+
+function syncLeverage(val){
+  val=clamp(val,1,100);
+  leverageSlider.value=val;
+  leverageInput.value=val;
+  updatePositionSize();
+  debouncedSave();
+}
+
+function syncMargin(val){
+  val=clamp(val,1,1000);
+  marginSlider.value=val;
+  marginInput.value=val;
+  updatePositionSize();
+  debouncedSave();
+}
+
+leverageSlider.addEventListener('input',()=>syncLeverage(leverageSlider.value));
+leverageInput.addEventListener('input',()=>syncLeverage(leverageInput.value));
+leverageInput.addEventListener('change',()=>syncLeverage(leverageInput.value));
+
+marginSlider.addEventListener('input',()=>syncMargin(marginSlider.value));
+marginInput.addEventListener('input',()=>syncMargin(marginInput.value));
+marginInput.addEventListener('change',()=>syncMargin(marginInput.value));
+
+async function saveSettings(){
+  const lev=parseInt(leverageSlider.value);
+  const marg=parseFloat(marginSlider.value);
+  try{
+    await settingsDocRef.set({target_leverage:lev,base_notional:marg,updated_at:new Date().toISOString()},{merge:true});
+    leverageSaved.classList.add('show');
+    marginSaved.classList.add('show');
+    setTimeout(()=>{leverageSaved.classList.remove('show');marginSaved.classList.remove('show');},2000);
+  }catch(e){console.error('Save settings error:',e);}
+}
+
+let saveTimeout;
+function debouncedSave(){clearTimeout(saveTimeout);saveTimeout=setTimeout(saveSettings,800);}
+
+if(settingsUnsub){settingsUnsub();}
+settingsUnsub=settingsDocRef.onSnapshot(doc=>{
+  if(doc.exists){
+    const data=doc.data();
+    if(data.target_leverage){state.target_leverage=data.target_leverage;syncLeverage(data.target_leverage);}
+    if(data.base_notional){state.base_notional=data.base_notional;syncMargin(data.base_notional);}
+  }
+  updatePositionSize();
+},err=>{console.error('Settings listener error:',err);updatePositionSize();});
+
+function switchTab(tab){
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+  document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
+  document.getElementById(`tab-${tab}`).classList.add('active');
+}
+
+function calcMoneyFlow(){
+  const openTrades=state.open_trades||[];
+  const closedTrades=state.closed_trades||[];
+  const allTrades=[...openTrades,...closedTrades];
+  let totalFees=0,feesEntry=0,feesExit=0,feesOpen=0,feesClose=0;
+  allTrades.forEach(t=>{
+    const entryFee=parseFloat(t.entry_fee)||parseFloat(t.fee_open)||0;
+    const exitFee=parseFloat(t.exit_fee)||parseFloat(t.fee_close)||0;
+    const openFee=parseFloat(t.open_fee)||0;
+    const closeFee=parseFloat(t.close_fee)||0;
+    const totalFee=parseFloat(t.total_fees)||(entryFee+exitFee+openFee+closeFee);
+    totalFees+=totalFee;feesEntry+=entryFee;feesExit+=exitFee;feesOpen+=openFee;feesClose+=closeFee;
+  });
+  let totalFunding=0,fundingPositive=0,fundingNegative=0,fundingOpen=0,fundingClosed=0;
+  allTrades.forEach(t=>{
+    const funding=parseFloat(t.funding_paid)||parseFloat(t.total_funding)||0;
+    totalFunding+=funding;
+    if(funding>0)fundingPositive+=funding;
+    if(funding<0)fundingNegative+=funding;
+    if(t.status==='OPEN')fundingOpen+=funding;else fundingClosed+=funding;
+  });
+  let totalFloating=0,floatingProfit=0,floatingLoss=0;
+  openTrades.forEach(t=>{const pnl=parseFloat(t.pnl)||0;totalFloating+=pnl;if(pnl>0)floatingProfit+=pnl;if(pnl<0)floatingLoss+=pnl;});
+  let totalClosedPnl=0,closedProfit=0,closedLoss=0;
+  closedTrades.forEach(t=>{const pnl=parseFloat(t.pnl)||0;totalClosedPnl+=pnl;if(pnl>0)closedProfit+=pnl;if(pnl<0)closedLoss+=pnl;});
+  return{totalFees,feesEntry,feesExit,feesOpen,feesClose,totalFunding,fundingPositive,fundingNegative,fundingOpen,fundingClosed,totalFloating,floatingProfit,floatingLoss,floatingCount:openTrades.length,totalClosedPnl,closedProfit,closedLoss,closedCount:closedTrades.length};
+}
+
+function updateMoneyFlow(){
+  const flow=calcMoneyFlow();
+  document.getElementById('totalFees').textContent=fmtMoney(flow.totalFees);
+  document.getElementById('feesEntry').textContent=fmtMoney(flow.feesEntry);
+  document.getElementById('feesExit').textContent=fmtMoney(flow.feesExit);
+  document.getElementById('feesOpen').textContent=fmtMoney(flow.feesOpen);
+  document.getElementById('feesClose').textContent=fmtMoney(flow.feesClose);
+  document.getElementById('totalFunding').textContent=fmtMoney(flow.totalFunding);
+  document.getElementById('fundingPositive').textContent=fmtMoney(flow.fundingPositive);
+  document.getElementById('fundingNegative').textContent=fmtMoney(flow.fundingNegative);
+  document.getElementById('fundingOpen').textContent=fmtMoney(flow.fundingOpen);
+  document.getElementById('fundingClosed').textContent=fmtMoney(flow.fundingClosed);
+  document.getElementById('totalFloating').textContent=fmtMoney(flow.totalFloating);
+  document.getElementById('floatingProfit').textContent=fmtMoney(flow.floatingProfit);
+  document.getElementById('floatingLoss').textContent=fmtMoney(flow.floatingLoss);
+  document.getElementById('floatingCount').textContent=flow.floatingCount;
+  document.getElementById('floatingAvg').textContent=flow.floatingCount>0?fmtMoney(flow.totalFloating/flow.floatingCount):'$0';
+  document.getElementById('totalClosedPnl').textContent=fmtMoney(flow.totalClosedPnl);
+  document.getElementById('closedProfit').textContent=fmtMoney(flow.closedProfit);
+  document.getElementById('closedLoss').textContent=fmtMoney(flow.closedLoss);
+  document.getElementById('closedCount').textContent=flow.closedCount;
+  document.getElementById('closedAvg').textContent=flow.closedCount>0?fmtMoney(flow.totalClosedPnl/flow.closedCount):'$0';
+
+  const startBalance=parseFloat(state.initial_balance)||INITIAL_VIRTUAL_BALANCE;
+  const currentBalance=parseFloat(state.balance)||INITIAL_VIRTUAL_BALANCE;
+  const maxBar=Math.max(startBalance,Math.abs(flow.totalClosedPnl),Math.abs(flow.totalFloating),Math.abs(flow.totalFees),Math.abs(flow.totalFunding),currentBalance,1);
+  const pct=v=>Math.min(100,Math.max(0,(Math.abs(v)/maxBar)*100));
+
+  document.getElementById('sankeyStart').style.width=pct(startBalance)+'%';
+  document.getElementById('sankeyStart').textContent=fmtMoney(startBalance);
+  document.getElementById('sankeyStartVal').textContent=fmtMoney(startBalance);
+  document.getElementById('sankeyClosedPnl').style.width=pct(flow.totalClosedPnl)+'%';
+  document.getElementById('sankeyClosedPnl').textContent=fmtMoney(flow.totalClosedPnl);
+  document.getElementById('sankeyClosedPnlVal').textContent=fmtMoney(flow.totalClosedPnl);
+  document.getElementById('sankeyClosedPnlVal').className='sankey-value '+(flow.totalClosedPnl>=0?'green':'red');
+  document.getElementById('sankeyFloating').style.width=pct(flow.totalFloating)+'%';
+  document.getElementById('sankeyFloating').textContent=fmtMoney(flow.totalFloating);
+  document.getElementById('sankeyFloatingVal').textContent=fmtMoney(flow.totalFloating);
+  document.getElementById('sankeyFloatingVal').className='sankey-value '+(flow.totalFloating>=0?'purple':'red');
+  document.getElementById('sankeyFees').style.width=pct(flow.totalFees)+'%';
+  document.getElementById('sankeyFees').textContent=fmtMoney(flow.totalFees);
+  document.getElementById('sankeyFeesVal').textContent=fmtMoney(flow.totalFees);
+  document.getElementById('sankeyFunding').style.width=pct(Math.abs(flow.totalFunding))+'%';
+  document.getElementById('sankeyFunding').textContent=fmtMoney(flow.totalFunding);
+  document.getElementById('sankeyFundingVal').textContent=fmtMoney(flow.totalFunding);
+  document.getElementById('sankeyNet').textContent=fmtMoney(currentBalance);
+  document.getElementById('sankeyNet').className='sankey-net-value '+(currentBalance>=startBalance?'green':'red');
+  const calculated=startBalance+flow.totalClosedPnl+flow.totalFloating-flow.totalFees-flow.totalFunding;
+  const drift=currentBalance-calculated;
+  document.getElementById('sankeyDrift').textContent=fmtMoney(drift);
+  document.getElementById('sankeyDrift').style.color=Math.abs(drift)<0.01?'#00e676':'#ff9800';
+
+  const allTrades=[...(state.open_trades||[]),...(state.closed_trades||[])];
+  const perTradeDiv=document.getElementById('perTradeBreakdown');
+  if(allTrades.length===0){
+    perTradeDiv.innerHTML='<div class="empty-state" style="padding:30px"><div class="icon">📊</div>No data</div>';
+  }else{
+    perTradeDiv.innerHTML=allTrades.map(t=>{
+      const pnl=parseFloat(t.pnl)||0;
+      const fees=parseFloat(t.total_fees)||(parseFloat(t.entry_fee)||0)+(parseFloat(t.exit_fee)||0)+(parseFloat(t.open_fee)||0)+(parseFloat(t.close_fee)||0);
+      const funding=parseFloat(t.funding_paid)||parseFloat(t.total_funding)||0;
+      const total=pnl+fees+funding;
+      const margin=parseFloat(t.margin)||10;
+      const pctOfMargin=(total/margin)*100;
+      return `<div class="per-trade-row"><div class="per-trade-symbol">${t.symbol}</div><div class="per-trade-dir"><span class="badge ${t.direction}">${t.direction}</span></div><div class="hide-mobile orange">${fmtMoney(fees)}</div><div class="hide-mobile cyan">${fmtMoney(funding)}</div><div class="${pnl>=0?'green':'red'}">${pnl>=0?'+':''}${fmtMoney(pnl)}</div><div class="hide-mobile ${total>=0?'green':'red'}">${total>=0?'+':''}${fmtMoney(total)}</div><div class="hide-mobile ${total>=0?'green':'red'}">${fmtPct(pctOfMargin)}</div></div>`;
+    }).join('');
+  }
+}
+
+function updateUI(){
+  const x=state;
+  document.getElementById('balance').textContent=fmtMoney(x.balance);
+  document.getElementById('available').textContent=fmtMoney(x.available_balance);
+  const initialBal=parseFloat(x.initial_balance)||INITIAL_VIRTUAL_BALANCE;
+  const pnl=(parseFloat(x.balance)||0)-initialBal;
+  const pnlPct=initialBal>0?((pnl/initialBal)*100):0;
+  document.getElementById('pnlChange').innerHTML=`<span class="${pnl>=0?'green':'red'}">${pnl>=0?'+':''}${fmtMoney(pnl)} (${pnl>=0?'+':''}${pnlPct.toFixed(2)}%)</span>`;
+
+  const openTrades=x.open_trades||[];
+  document.getElementById('openCount').textContent=openTrades.length;
+  document.getElementById('openCountHeader').textContent=openTrades.length;
+  document.getElementById('totalTrades').textContent=x.total_trades||0;
+
+  const closedTrades=x.closed_trades||[];
+  const wins=closedTrades.filter(t=>(parseFloat(t.pnl)||0)>0).length;
+  const losses=closedTrades.filter(t=>(parseFloat(t.pnl)||0)<0).length;
+  const liqs=closedTrades.filter(t=>t.status==='LIQUIDATED').length;
+  const totalClosed=closedTrades.length;
+  document.getElementById('winCount').textContent=wins;
+  document.getElementById('lossCount').textContent=losses;
+  document.getElementById('liqCount').textContent=liqs;
+  document.getElementById('winRate').textContent=totalClosed>0?((wins/totalClosed)*100).toFixed(1)+'%':'0%';
+
+  const otList=document.getElementById('openTradesList');
+  if(openTrades.length===0){
+    otList.innerHTML='<div class="empty-state"><div class="icon">📭</div>No open positions</div>';
+  }else{
+    otList.innerHTML=openTrades.map(t=>`<div class="trade-card ${t.direction}"><div class="trade-header"><span class="trade-symbol">${t.symbol}</span><div class="trade-badges"><span class="badge ${t.direction}">${t.direction}</span><span class="badge OPEN">OPEN</span></div></div><div class="trade-time">Entry: ${fmtTime(t.open_time)}</div><div class="trade-details"><div class="detail-item"><span class="detail-label">Leverage</span><span class="detail-value">x${t.leverage}</span></div><div class="detail-item"><span class="detail-label">Margin</span><span class="detail-value">${fmtMoney(t.margin)}</span></div><div class="detail-item"><span class="detail-label">Entry</span><span class="detail-value">${fmtMoney(t.entry_price)}</span></div><div class="detail-item"><span class="detail-label">Current</span><span class="detail-value">${fmtMoney(t.current_price)}</span></div><div class="detail-item"><span class="detail-label">Stop</span><span class="detail-value" style="color:#ff9800">${fmtMoney(t.stop_loss)}</span></div><div class="detail-item"><span class="detail-label">Trailing</span><span class="detail-value" style="color:#00bcd4">${t.trailing_stop>0?fmtMoney(t.trailing_stop):'—'}</span></div><div class="detail-item"><span class="detail-label">Fees</span><span class="detail-value">${fmtMoney(t.total_fees)}</span></div><div class="detail-item"><span class="detail-label">P&L</span><span class="detail-value ${(parseFloat(t.pnl)||0)>=0?'pnl-positive':'pnl-negative'}">${(parseFloat(t.pnl)||0)>=0?'+':''}${fmtMoney(t.pnl)} (${fmtPct(t.pnl_percent)})</span></div></div></div>`).join('');
+  }
+
+  const histTable=document.getElementById('historyTable');
+  document.getElementById('historyCount').textContent=closedTrades.length;
+  if(closedTrades.length===0){
+    histTable.innerHTML='<tr><td colspan="11" class="empty-state"><div class="icon">📊</div>History empty</td></tr>';
+  }else{
+    const sorted=[...closedTrades].sort((a,b)=>{const ta=a.close_time?new Date(a.close_time).getTime():0;const tb=b.close_time?new Date(b.close_time).getTime():0;return tb-ta;});
+    histTable.innerHTML=sorted.map(t=>`<tr><td>${fmtTime(t.open_time)}</td><td>${fmtTime(t.close_time)}</td><td><b>${t.symbol}</b></td><td>x${t.leverage}</td><td><span class="badge ${t.direction}">${t.direction}</span></td><td>${fmtMoney(t.entry_price)}</td><td>${fmtMoney(t.exit_price)}</td><td>${fmtMoney(t.margin)}</td><td class="${(parseFloat(t.pnl)||0)>=0?'green':'red'}">${(parseFloat(t.pnl)||0)>=0?'+':''}${fmtMoney(t.pnl)}</td><td class="${(parseFloat(t.pnl_percent)||0)>=0?'green':'red'}">${fmtPct(t.pnl_percent)}</td><td><span class="badge ${t.status}">${t.status}</span></td></tr>`).join('');
+  }
+
+  document.getElementById('lastUpdate').textContent='Updated: '+new Date().toLocaleTimeString('en-GB');
+  updateMoneyFlow();
+  updateStatusDot();
+}
+
+// Сначала грузим данные один раз, потом слушаем изменения
+loadStateOnce().then(()=>{
+  startFirebaseListeners();
+});
+</script>
 </body>
 </html>
