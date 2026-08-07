@@ -111,6 +111,7 @@ td{padding:10px;border-bottom:1px solid #2a2f5a}tr:hover td{background:rgba(0,21
 </style>
 <base target="_blank">
 <base target="_blank">
+<base target="_blank">
 </head>
 <body>
 <div class="modal-overlay" id="apiModal">
@@ -144,7 +145,7 @@ td{padding:10px;border-bottom:1px solid #2a2f5a}tr:hover td{background:rgba(0,21
 </div>
 <div class="settings-card">
 <div class="settings-label">Margin per Position <span id="marginVal">$10</span></div>
-<div class="slider-row"><input type="range" id="marginSlider" min="1" max="1000" value="10" step="1"><input type="number" class="num-input" id="marginInput" min="1" max="1000" value="10"></div>
+<div class="slider-row"><input type="range" id="marginSlider" min="1" max="1000" value="10" step="0.01"><input type="number" class="num-input" id="marginInput" min="1" max="1000" value="10" step="0.01"></div>
 <div class="settings-sub">$1 to $1000</div><div class="save-indicator" id="marginSaved">Saved to Firebase</div>
 </div>
 <div class="settings-card">
@@ -256,6 +257,9 @@ firebase.initializeApp(firebaseConfig);
 const db=firebase.firestore();
 
 let isRealMode=false;
+let isInitializingSettings=true;
+const LS_LEVERAGE='bot3_leverage';
+const LS_MARGIN='bot3_margin';
 let apiCredentials=null;
 let settingsDocRef=db.collection('bot3_settings').doc('config');
 let configDocRef=db.collection('bot3_config').doc('default');
@@ -476,27 +480,33 @@ const marginSaved=document.getElementById('marginSaved');
 function clamp(val,min,max){return Math.min(max,Math.max(min,parseFloat(val)||min));}
 
 function updatePositionSize(){
-  const lev=parseInt(leverageSlider.value);
-  const marg=parseInt(marginSlider.value);
+  const lev=parseInt(leverageSlider.value)||10;
+  const marg=parseFloat(marginSlider.value)||10;
   leverageVal.textContent=lev+'x';
-  marginVal.textContent='$'+marg;
-  positionSize.textContent='$'+(lev*marg).toLocaleString();
+  marginVal.textContent='$'+marg.toFixed(2);
+  positionSize.textContent='$'+(lev*marg).toFixed(2);
 }
 
 function syncLeverage(val){
-  val=clamp(val,1,100);
+  val=clamp(parseInt(val)||10,1,100);
   leverageSlider.value=val;
   leverageInput.value=val;
   updatePositionSize();
-  debouncedSave();
+  if(!isInitializingSettings){
+    localStorage.setItem(LS_LEVERAGE, val);
+    debouncedSave();
+  }
 }
 
 function syncMargin(val){
-  val=clamp(val,1,1000);
+  val=Math.round(clamp(parseFloat(val)||10,1,1000)*100)/100;
   marginSlider.value=val;
-  marginInput.value=val;
+  marginInput.value=val.toFixed(2);
   updatePositionSize();
-  debouncedSave();
+  if(!isInitializingSettings){
+    localStorage.setItem(LS_MARGIN, val);
+    debouncedSave();
+  }
 }
 
 leverageSlider.addEventListener('input',()=>syncLeverage(leverageSlider.value));
@@ -512,6 +522,8 @@ async function saveSettings(){
   const marg=parseFloat(marginSlider.value);
   try{
     await settingsDocRef.set({target_leverage:lev,base_notional:marg,updated_at:new Date().toISOString()},{merge:true});
+    localStorage.setItem(LS_LEVERAGE, lev);
+    localStorage.setItem(LS_MARGIN, marg);
     leverageSaved.classList.add('show');
     marginSaved.classList.add('show');
     setTimeout(()=>{leverageSaved.classList.remove('show');marginSaved.classList.remove('show');},2000);
@@ -522,14 +534,25 @@ let saveTimeout;
 function debouncedSave(){clearTimeout(saveTimeout);saveTimeout=setTimeout(saveSettings,800);}
 
 if(settingsUnsub){settingsUnsub();}
+// Load from localStorage first (instant)
+const lsLev=localStorage.getItem(LS_LEVERAGE);
+const lsMarg=localStorage.getItem(LS_MARGIN);
+if(lsLev){syncLeverage(lsLev);}
+if(lsMarg){syncMargin(lsMarg);}
+
 settingsUnsub=settingsDocRef.onSnapshot(doc=>{
   if(doc.exists){
     const data=doc.data();
     if(data.target_leverage){state.target_leverage=data.target_leverage;syncLeverage(data.target_leverage);}
-    if(data.base_notional){state.base_notional=data.base_notional;syncMargin(data.base_notional);}
+    if(data.base_notional!==undefined){state.base_notional=data.base_notional;syncMargin(data.base_notional);}
   }
+  isInitializingSettings=false;
   updatePositionSize();
-},err=>{console.error('Settings listener error:',err);updatePositionSize();});
+},err=>{
+  console.error('Settings listener error:',err);
+  isInitializingSettings=false;
+  updatePositionSize();
+});
 
 function switchTab(tab){
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
