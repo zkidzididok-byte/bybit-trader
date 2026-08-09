@@ -257,6 +257,7 @@ const db=firebase.firestore();
 
 let isRealMode=false;
 let isInitializingSettings=true;
+let isFirebaseLoading=true;
 let currentUserId='virtual';
 let stateUnsub=null;
 let settingsUnsub=null;
@@ -490,7 +491,7 @@ function syncLeverage(val){
   leverageSlider.value=val;
   leverageInput.value=val;
   updatePositionSize();
-  if(!isInitializingSettings){
+  if(!isInitializingSettings && !isFirebaseLoading){
     localStorage.setItem(LS_LEVERAGE,val);
     debouncedSave();
   }
@@ -501,19 +502,17 @@ function syncMargin(val){
   marginSlider.value=val;
   marginInput.value=val.toFixed(2);
   updatePositionSize();
-  if(!isInitializingSettings){
+  if(!isInitializingSettings && !isFirebaseLoading){
     localStorage.setItem(LS_MARGIN,val);
     debouncedSave();
   }
 }
 
-leverageSlider.addEventListener('input',()=>syncLeverage(leverageSlider.value));
-leverageInput.addEventListener('input',()=>syncLeverage(leverageInput.value));
-leverageInput.addEventListener('change',()=>syncLeverage(leverageInput.value));
+leverageSlider.addEventListener('input',()=>{syncLeverage(leverageSlider.value);});
+leverageInput.addEventListener('change',()=>{syncLeverage(leverageInput.value);});
 
-marginSlider.addEventListener('input',()=>syncMargin(marginSlider.value));
-marginInput.addEventListener('input',()=>syncMargin(marginInput.value));
-marginInput.addEventListener('change',()=>syncMargin(marginInput.value));
+marginSlider.addEventListener('input',()=>{syncMargin(marginSlider.value);});
+marginInput.addEventListener('change',()=>{syncMargin(marginInput.value);});
 
 async function saveSettings(){
   const lev=parseInt(leverageSlider.value);
@@ -522,34 +521,47 @@ async function saveSettings(){
     await db.collection('bot3_settings').doc(currentUserId).set({target_leverage:lev,base_notional:marg,updated_at:new Date().toISOString()},{merge:true});
     localStorage.setItem(LS_LEVERAGE,lev);
     localStorage.setItem(LS_MARGIN,marg);
-    leverageSaved.classList.add('show');
-    marginSaved.classList.add('show');
-    setTimeout(()=>{leverageSaved.classList.remove('show');marginSaved.classList.remove('show');},2000);
   }catch(e){console.error('Save settings error:',e);}
 }
 
+function showSaveIndicator(type){
+  if(type==='leverage'||type==='both'){
+    leverageSaved.classList.add('show');
+    setTimeout(()=>leverageSaved.classList.remove('show'),1500);
+  }
+  if(type==='margin'||type==='both'){
+    marginSaved.classList.add('show');
+    setTimeout(()=>marginSaved.classList.remove('show'),1500);
+  }
+}
+
 let saveTimeout;
-function debouncedSave(){clearTimeout(saveTimeout);saveTimeout=setTimeout(saveSettings,800);}
+let lastSavedLev=null;
+let lastSavedMarg=null;
+function debouncedSave(){clearTimeout(saveTimeout);saveTimeout=setTimeout(()=>{const lev=parseInt(leverageSlider.value);const marg=parseFloat(marginSlider.value);saveSettings();if(lastSavedLev!==null&&lev!==lastSavedLev&&marg===lastSavedMarg)showSaveIndicator('leverage');else if(lastSavedMarg!==null&&marg!==lastSavedMarg&&lev===lastSavedLev)showSaveIndicator('margin');else showSaveIndicator('both');lastSavedLev=lev;lastSavedMarg=marg;},800);}
 
 function subscribeSettings(userId){
   if(settingsUnsub){settingsUnsub();settingsUnsub=null;}
+  isFirebaseLoading=true;
   settingsUnsub=db.collection('bot3_settings').doc(userId).onSnapshot(doc=>{
     if(doc.exists){
       const data=doc.data();
-      if(data.target_leverage){state.target_leverage=data.target_leverage;syncLeverage(data.target_leverage);}
+      if(data.target_leverage!==undefined){state.target_leverage=data.target_leverage;syncLeverage(data.target_leverage);}
       if(data.base_notional!==undefined){state.base_notional=data.base_notional;syncMargin(data.base_notional);}
       updatePositionSize();
     }else{
       db.collection('bot3_settings').doc('config').get().then(gdoc=>{
         if(gdoc.exists){
           const data=gdoc.data();
-          if(data.target_leverage){state.target_leverage=data.target_leverage;syncLeverage(data.target_leverage);}
+          if(data.target_leverage!==undefined){state.target_leverage=data.target_leverage;syncLeverage(data.target_leverage);}
           if(data.base_notional!==undefined){state.base_notional=data.base_notional;syncMargin(data.base_notional);}
         }
         updatePositionSize();
       }).catch(err=>{console.error('Global settings error:',err);updatePositionSize();});
     }
-  },err=>{console.error('Personal settings error:',err);updatePositionSize();});
+    // After first Firebase load, allow saves
+    setTimeout(()=>{isFirebaseLoading=false;},500);
+  },err=>{console.error('Personal settings error:',err);isFirebaseLoading=false;updatePositionSize();});
 }
 
 function switchTab(tab){
@@ -745,6 +757,8 @@ async function initDashboard(){
   subscribeSettings(targetUserId);
 
   isInitializingSettings=false;
+  lastSavedLev=parseInt(leverageSlider.value);
+  lastSavedMarg=parseFloat(marginSlider.value);
   updatePositionSize();
 }
 
