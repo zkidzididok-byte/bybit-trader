@@ -281,14 +281,14 @@ const fmtMoney=v=>{const n=parseFloat(v)||0;return '$'+n.toFixed(4)};
 const fmtPct=v=>{const n=parseFloat(v)||0;return(n>=0?'+':'')+n.toFixed(2)+'%'};
 const fmtTime=iso=>{if(!iso)return'--';const d=new Date(iso);return d.toLocaleString('en-GB',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'})};
 
-function generateSignature(apiSecret,timestamp,recvWindow,queryString){
-  return CryptoJS.HmacSHA256(timestamp+apiSecret+recvWindow+queryString,apiSecret).toString();
+function generateSignature(apiKey,apiSecret,timestamp,recvWindow,queryString){
+  return CryptoJS.HmacSHA256(timestamp+apiKey+recvWindow+queryString,apiSecret).toString();
 }
 
 async function fetchBybitBalance(creds){
   try{
     const timestamp=Date.now().toString(),recvWindow='5000',query=`accountType=${creds.accountType}`;
-    const sign=generateSignature(creds.apiSecret,timestamp,recvWindow,query);
+    const sign=generateSignature(creds.apiKey,creds.apiSecret,timestamp,recvWindow,query);
     const resp=await fetch(`https://api.bybit.com/v5/account/wallet-balance?${query}`,{headers:{'X-BAPI-API-KEY':creds.apiKey,'X-BAPI-TIMESTAMP':timestamp,'X-BAPI-SIGN':sign,'X-BAPI-RECV-WINDOW':recvWindow}});
     const data=await resp.json();
     if(data.retCode===0&&data.result&&data.result.list&&data.result.list[0]){
@@ -538,7 +538,6 @@ function subscribeSettings(userId){
       const data=doc.data();
       if(data.target_leverage){state.target_leverage=data.target_leverage;syncLeverage(data.target_leverage);}
       if(data.base_notional!==undefined){state.base_notional=data.base_notional;syncMargin(data.base_notional);}
-      isInitializingSettings=false;
       updatePositionSize();
     }else{
       db.collection('bot3_settings').doc('config').get().then(gdoc=>{
@@ -547,11 +546,10 @@ function subscribeSettings(userId){
           if(data.target_leverage){state.target_leverage=data.target_leverage;syncLeverage(data.target_leverage);}
           if(data.base_notional!==undefined){state.base_notional=data.base_notional;syncMargin(data.base_notional);}
         }
-        isInitializingSettings=false;
         updatePositionSize();
-      }).catch(err=>{console.error('Global settings error:',err);isInitializingSettings=false;updatePositionSize();});
+      }).catch(err=>{console.error('Global settings error:',err);updatePositionSize();});
     }
-  },err=>{console.error('Personal settings error:',err);isInitializingSettings=false;updatePositionSize();});
+  },err=>{console.error('Personal settings error:',err);updatePositionSize();});
 }
 
 function switchTab(tab){
@@ -705,23 +703,52 @@ function updateUI(){
 
 // Auto-reconnect on page load
 const savedUserId=localStorage.getItem(LS_USER_ID);
-if(savedUserId&&savedUserId!=='virtual'){
-  modal.style.display='none';
-  startFirebaseListeners(savedUserId);
-  loadStateOnce(savedUserId).then(()=>{
-    subscribeSettings(savedUserId);
-  });
-}else{
-  // Load from localStorage first (instant)
-  const lsLev=localStorage.getItem(LS_LEVERAGE);
-  const lsMarg=localStorage.getItem(LS_MARGIN);
-  if(lsLev){syncLeverage(lsLev);}
-  if(lsMarg){syncMargin(lsMarg);}
-  loadStateOnce('virtual').then(()=>{
-    startFirebaseListeners('virtual');
-    subscribeSettings('virtual');
-  });
+const targetUserId=savedUserId||'virtual';
+
+// Priority: Firebase > localStorage. Never let localStorage overwrite Firebase on load.
+async function initDashboard(){
+  isInitializingSettings=true;
+
+  if(targetUserId!=='virtual'){
+    modal.style.display='none';
+  }
+
+  startFirebaseListeners(targetUserId);
+  await loadStateOnce(targetUserId);
+
+  // Load settings from Firebase first
+  const settingsDoc=await db.collection('bot3_settings').doc(targetUserId).get();
+  let loadedFromFirebase=false;
+  if(settingsDoc.exists){
+    const data=settingsDoc.data();
+    if(data.target_leverage!==undefined){syncLeverage(data.target_leverage);loadedFromFirebase=true;}
+    if(data.base_notional!==undefined){syncMargin(data.base_notional);loadedFromFirebase=true;}
+  }
+
+  // If no Firebase settings, fallback to global config
+  if(!loadedFromFirebase){
+    const globalDoc=await db.collection('bot3_settings').doc('config').get();
+    if(globalDoc.exists){
+      const data=globalDoc.data();
+      if(data.target_leverage!==undefined)syncLeverage(data.target_leverage);
+      if(data.base_notional!==undefined)syncMargin(data.base_notional);
+    }else{
+      // Final fallback: localStorage
+      const lsLev=localStorage.getItem(LS_LEVERAGE);
+      const lsMarg=localStorage.getItem(LS_MARGIN);
+      if(lsLev)syncLeverage(lsLev);
+      if(lsMarg)syncMargin(lsMarg);
+    }
+  }
+
+  // Subscribe to realtime settings updates
+  subscribeSettings(targetUserId);
+
+  isInitializingSettings=false;
+  updatePositionSize();
 }
+
+initDashboard();
 </script>
 </body>
 </html>
