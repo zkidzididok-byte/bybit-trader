@@ -34,7 +34,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#0a0e1a;color:#e0e0e
 input[type=range]{flex:1;-webkit-appearance:none;height:8px;border-radius:4px;background:#2a2f5a;outline:none}
 input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:linear-gradient(135deg,#00d4ff,#7b2cbf);cursor:pointer;box-shadow:0 0 10px rgba(0,212,255,.5)}
 input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;background:linear-gradient(135deg,#00d4ff,#7b2cbf);cursor:pointer;border:none}
-.num-input{width:70px;padding:8px 10px;background:#0d1128;border:1px solid #2a2f5a;border-radius:8px;color:#fff;font-size:.95em;text-align:center;font-weight:600}
+.num-input{width:80px;padding:8px 10px;background:#0d1128;border:1px solid #2a2f5a;border-radius:8px;color:#fff;font-size:.95em;text-align:center;font-weight:600}
 .num-input:focus{outline:none;border-color:#00d4ff}
 .green{color:#00e676}.red{color:#ff5252}.orange{color:#ff9800}.cyan{color:#00bcd4}.purple{color:#b388ff}.yellow{color:#ffd740}
 .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px}
@@ -107,10 +107,9 @@ td{padding:10px;border-bottom:1px solid #2a2f5a}tr:hover td{background:rgba(0,21
 .save-indicator.show{opacity:1}
 .position-size-display{font-size:2em;font-weight:700;color:#ffd740;margin-bottom:8px}
 .last-seen{font-size:.75em;color:#ff9800;margin-top:4px}
+.user-id-badge{font-size:.75em;color:#8892b0;margin-top:4px}
 @media(max-width:768px){.balance-section,.settings-section{grid-template-columns:1fr}.stats-grid{grid-template-columns:repeat(2,1fr)}.trade-details{grid-template-columns:repeat(2,1fr)}.money-flow-grid{grid-template-columns:1fr}.per-trade-row{grid-template-columns:60px 60px 1fr 1fr}.per-trade-row .hide-mobile{display:none}.modal-box{padding:25px 20px}}
 </style>
-<base target="_blank">
-<base target="_blank">
 <base target="_blank">
 </head>
 <body>
@@ -128,7 +127,7 @@ td{padding:10px;border-bottom:1px solid #2a2f5a}tr:hover td{background:rgba(0,21
 
 <div class="container">
 <div class="header">
-<div><h1>Trading Bot 3</h1><div class="api-status" id="apiStatus">Mode: <span class="mode-badge virtual" id="modeBadge">Virtual</span></div><div class="last-seen" id="lastSeen"></div></div>
+<div><h1>Trading Bot 3</h1><div class="api-status" id="apiStatus">Mode: <span class="mode-badge virtual" id="modeBadge">Virtual</span></div><div class="user-id-badge" id="userIdBadge"></div><div class="last-seen" id="lastSeen"></div></div>
 <div class="status"><span class="dot" id="statusDot"></span><span id="statusText">Loading...</span></div>
 </div>
 
@@ -144,12 +143,12 @@ td{padding:10px;border-bottom:1px solid #2a2f5a}tr:hover td{background:rgba(0,21
 <div class="settings-sub">1x to 100x</div><div class="save-indicator" id="leverageSaved">Saved to Firebase</div>
 </div>
 <div class="settings-card">
-<div class="settings-label">Margin per Position <span id="marginVal">$10</span></div>
-<div class="slider-row"><input type="range" id="marginSlider" min="1" max="1000" value="10" step="0.01"><input type="number" class="num-input" id="marginInput" min="1" max="1000" value="10" step="0.01"></div>
+<div class="settings-label">Margin per Position <span id="marginVal">$10.00</span></div>
+<div class="slider-row"><input type="range" id="marginSlider" min="1" max="1000" value="10" step="0.01"><input type="number" class="num-input" id="marginInput" min="1" max="1000" value="10.00" step="0.01"></div>
 <div class="settings-sub">$1 to $1000</div><div class="save-indicator" id="marginSaved">Saved to Firebase</div>
 </div>
 <div class="settings-card">
-<div class="settings-label">Position Size</div><div class="position-size-display" id="positionSize">$100</div><div class="settings-sub">Margin x Leverage</div>
+<div class="settings-label">Position Size</div><div class="position-size-display" id="positionSize">$100.00</div><div class="settings-sub">Margin x Leverage</div>
 </div>
 </div>
 
@@ -170,14 +169,14 @@ td{padding:10px;border-bottom:1px solid #2a2f5a}tr:hover td{background:rgba(0,21
 <div id="tab-trades" class="tab-content active">
 <div class="section">
 <div class="section-header"><div class="section-title">Open Positions</div><div class="section-count" id="openCountHeader">0</div></div>
-<div class="trade-list" id="openTradesList"><div class="empty-state"><div class="icon">📭</div>No open positions</div></div>
+<div class="trade-list" id="openTradesList"><div class="empty-state"><div class="icon">&#128236;</div>No open positions</div></div>
 </div>
 <div class="section">
 <div class="section-header"><div class="section-title">Trade History</div><div class="section-count" id="historyCount">0</div></div>
 <div style="overflow-x:auto">
 <table>
 <thead><tr><th>Open Time</th><th>Close Time</th><th>Coin</th><th>Lev</th><th>Dir</th><th>Entry</th><th>Exit</th><th>Margin</th><th>P&L $</th><th>P&L %</th><th>Status</th></tr></thead>
-<tbody id="historyTable"><tr><td colspan="11" class="empty-state"><div class="icon">📊</div>History empty</td></tr></tbody>
+<tbody id="historyTable"><tr><td colspan="11" class="empty-state"><div class="icon">&#128202;</div>History empty</td></tr></tbody>
 </table>
 </div>
 <div class="last-update" id="lastUpdate">Updated: --</div>
@@ -233,11 +232,11 @@ td{padding:10px;border-bottom:1px solid #2a2f5a}tr:hover td{background:rgba(0,21
 <div class="sankey-divider"></div>
 <div class="sankey-row"><div class="sankey-label">+ Realized P&L</div><div class="sankey-bar-wrap"><div class="sankey-bar income" id="sankeyClosedPnl" style="width:0%">$0</div></div><div class="sankey-value green" id="sankeyClosedPnlVal">$0</div></div>
 <div class="sankey-row"><div class="sankey-label">+ Floating P&L</div><div class="sankey-bar-wrap"><div class="sankey-bar neutral" id="sankeyFloating" style="width:0%">$0</div></div><div class="sankey-value purple" id="sankeyFloatingVal">$0</div></div>
-<div class="sankey-row"><div class="sankey-label">− Fees</div><div class="sankey-bar-wrap"><div class="sankey-bar expense" id="sankeyFees" style="width:0%">$0</div></div><div class="sankey-value red" id="sankeyFeesVal">$0</div></div>
-<div class="sankey-row"><div class="sankey-label">− Funding</div><div class="sankey-bar-wrap"><div class="sankey-bar expense" id="sankeyFunding" style="width:0%">$0</div></div><div class="sankey-value red" id="sankeyFundingVal">$0</div></div>
+<div class="sankey-row"><div class="sankey-label">&#8722; Fees</div><div class="sankey-bar-wrap"><div class="sankey-bar expense" id="sankeyFees" style="width:0%">$0</div></div><div class="sankey-value red" id="sankeyFeesVal">$0</div></div>
+<div class="sankey-row"><div class="sankey-label">&#8722; Funding</div><div class="sankey-bar-wrap"><div class="sankey-bar expense" id="sankeyFunding" style="width:0%">$0</div></div><div class="sankey-value red" id="sankeyFundingVal">$0</div></div>
 <div class="sankey-divider"></div>
 <div class="sankey-net"><span class="sankey-net-label">CURRENT TOTAL BALANCE</span><span class="sankey-net-value" id="sankeyNet">$2000</span></div>
-<div class="sankey-net" style="border-top:none;padding-top:0"><span class="sankey-net-label">Drift (balance − calc)</span><span class="sankey-net-value" id="sankeyDrift" style="color:#8892b0">$0</span></div>
+<div class="sankey-net" style="border-top:none;padding-top:0"><span class="sankey-net-label">Drift (balance &#8722; calc)</span><span class="sankey-net-value" id="sankeyDrift" style="color:#8892b0">$0</span></div>
 </div>
 </div>
 
@@ -245,7 +244,7 @@ td{padding:10px;border-bottom:1px solid #2a2f5a}tr:hover td{background:rgba(0,21
 <div class="section-header"><div class="section-title">Per-trade Breakdown</div></div>
 <div style="overflow-x:auto">
 <div class="per-trade-row header"><div>Coin</div><div>Dir</div><div class="hide-mobile">Fees</div><div class="hide-mobile">Funding</div><div>P&L</div><div class="hide-mobile">Total</div><div class="hide-mobile">% of Margin</div></div>
-<div id="perTradeBreakdown"><div class="empty-state" style="padding:30px"><div class="icon">📊</div>No data</div></div>
+<div id="perTradeBreakdown"><div class="empty-state" style="padding:30px"><div class="icon">&#128202;</div>No data</div></div>
 </div>
 </div>
 </div>
@@ -258,16 +257,18 @@ const db=firebase.firestore();
 
 let isRealMode=false;
 let isInitializingSettings=true;
-const LS_LEVERAGE='bot3_leverage';
-const LS_MARGIN='bot3_margin';
-let apiCredentials=null;
-let settingsDocRef=db.collection('bot3_settings').doc('config');
-let configDocRef=db.collection('bot3_config').doc('default');
+let currentUserId='virtual';
 let stateUnsub=null;
 let settingsUnsub=null;
 let configUnsub=null;
 let lastBotUpdateTime=null;
 let dataLoaded=false;
+
+const LS_USER_ID='bot3_user_id';
+const LS_LEVERAGE='bot3_leverage';
+const LS_MARGIN='bot3_margin';
+const INITIAL_VIRTUAL_BALANCE=2000;
+const OFFLINE_THRESHOLD_MS=5*60*1000;
 
 let state={
   balance:2000,available_balance:2000,initial_balance:2000,
@@ -275,8 +276,6 @@ let state={
   total_fees_paid:0,total_funding_paid:0,realized_pnl:0,unrealized_pnl:0,
   target_leverage:10,base_notional:10
 };
-const INITIAL_VIRTUAL_BALANCE=2000;
-const OFFLINE_THRESHOLD_MS=5*60*1000; // 5 minutes
 
 const fmtMoney=v=>{const n=parseFloat(v)||0;return '$'+n.toFixed(4)};
 const fmtPct=v=>{const n=parseFloat(v)||0;return(n>=0?'+':'')+n.toFixed(2)+'%'};
@@ -308,34 +307,25 @@ const apiKeyInput=document.getElementById('apiKey');
 const apiSecretInput=document.getElementById('apiSecret');
 const accountTypeInput=document.getElementById('accountType');
 const modeBadge=document.getElementById('modeBadge');
+const userIdBadge=document.getElementById('userIdBadge');
 
 function applyStateData(data){
   state={...state,...data};
-  if(data.wallet_balance!==undefined){
-    state.balance=parseFloat(data.wallet_balance)||0;
-  }
-  if(data.available_balance!==undefined){
-    state.available_balance=parseFloat(data.available_balance)||0;
-  }else if(data.wallet_balance!==undefined){
-    state.available_balance=parseFloat(data.wallet_balance)||0;
-  }
-  if(!state.initial_balance||state.initial_balance===0){
-    state.initial_balance=state.balance||INITIAL_VIRTUAL_BALANCE;
-  }
-  if(data.updated_at){
-    lastBotUpdateTime=new Date(data.updated_at);
-  }
+  if(data.wallet_balance!==undefined) state.balance=parseFloat(data.wallet_balance)||0;
+  if(data.available_balance!==undefined) state.available_balance=parseFloat(data.available_balance)||0;
+  else if(data.wallet_balance!==undefined) state.available_balance=parseFloat(data.wallet_balance)||0;
+  if(!state.initial_balance||state.initial_balance===0) state.initial_balance=state.balance||INITIAL_VIRTUAL_BALANCE;
+  if(data.updated_at) lastBotUpdateTime=new Date(data.updated_at);
   dataLoaded=true;
   updateUI();
 }
 
-async function loadStateOnce(){
+async function loadStateOnce(userId){
   try{
-    const doc=await db.collection('trading_state').doc('bot3').get();
+    const doc=await db.collection('trading_state').doc(userId).get();
     if(doc.exists){
       applyStateData(doc.data());
     }else{
-      // No data in Firebase yet — show virtual defaults
       state.balance=INITIAL_VIRTUAL_BALANCE;
       state.available_balance=INITIAL_VIRTUAL_BALANCE;
       state.initial_balance=INITIAL_VIRTUAL_BALANCE;
@@ -349,59 +339,48 @@ async function loadStateOnce(){
   }
 }
 
-function startFirebaseListeners(){
+function startFirebaseListeners(userId){
+  currentUserId=userId;
+  localStorage.setItem(LS_USER_ID,userId);
+  userIdBadge.textContent='User: '+userId;
+
   if(stateUnsub){stateUnsub();stateUnsub=null;}
-  stateUnsub=db.collection('trading_state').doc('bot3').onSnapshot(doc=>{
-    if(doc.exists){
-      applyStateData(doc.data());
-    }
-  },err=>{
-    console.error('Firestore state error:',err);
-  });
+  stateUnsub=db.collection('trading_state').doc(userId).onSnapshot(doc=>{
+    if(doc.exists) applyStateData(doc.data());
+  },err=>{console.error('Firestore state error:',err);});
 
   if(configUnsub){configUnsub();configUnsub=null;}
-  configUnsub=configDocRef.onSnapshot(doc=>{
+  configUnsub=db.collection('bot3_users').doc(userId).onSnapshot(doc=>{
     if(doc.exists){
       const cfg=doc.data();
       if(cfg.enabled&&cfg.api_key){
         isRealMode=true;
         modeBadge.className='mode-badge real';
         modeBadge.textContent='Real';
-        document.getElementById('apiStatus').innerHTML='Mode: <span class="mode-badge real" id="modeBadge">Real</span>';
       }else{
         isRealMode=false;
         modeBadge.className='mode-badge virtual';
         modeBadge.textContent='Virtual';
-        document.getElementById('apiStatus').innerHTML='Mode: <span class="mode-badge virtual" id="modeBadge">Virtual</span>';
       }
     }else{
       isRealMode=false;
       modeBadge.className='mode-badge virtual';
       modeBadge.textContent='Virtual';
-      document.getElementById('apiStatus').innerHTML='Mode: <span class="mode-badge virtual" id="modeBadge">Virtual</span>';
     }
     updateStatusDot();
-  },err=>{console.error('Config listener error:',err);});
+  },err=>{console.error('Config listener error:',err);updateStatusDot();});
 }
 
 function updateStatusDot(){
   const dot=document.getElementById('statusDot');
   const statusText=document.getElementById('statusText');
   const lastSeenEl=document.getElementById('lastSeen');
-
-  if(!dataLoaded){
-    dot.className='dot';
-    statusText.textContent='Loading...';
-    lastSeenEl.textContent='';
-    return;
-  }
-
+  if(!dataLoaded){dot.className='dot';statusText.textContent='Loading...';lastSeenEl.textContent='';return;}
   if(lastBotUpdateTime){
     const now=new Date();
     const diffMs=now-lastBotUpdateTime;
     const diffMin=Math.floor(diffMs/60000);
     const diffSec=Math.floor((diffMs%60000)/1000);
-
     if(diffMs<OFFLINE_THRESHOLD_MS){
       dot.className='dot online';
       statusText.textContent=isRealMode?'Bybit API':'Online';
@@ -420,23 +399,17 @@ function updateStatusDot(){
     lastSeenEl.textContent='';
   }
 }
-
 setInterval(updateStatusDot,5000);
 
 async function setVirtualMode(){
-  isRealMode=false;apiCredentials=null;
+  isRealMode=false;
   modal.style.display='none';
   modeBadge.className='mode-badge virtual';
   modeBadge.textContent='Virtual';
-  document.getElementById('apiStatus').innerHTML='Mode: <span class="mode-badge virtual" id="modeBadge">Virtual</span>';
-  try{
-    await configDocRef.set({enabled:false},{merge:true});
-  }catch(e){console.error(e);}
+  startFirebaseListeners('virtual');
+  await loadStateOnce('virtual');
   state.initial_balance=INITIAL_VIRTUAL_BALANCE;
-  if(!dataLoaded){
-    state.balance=INITIAL_VIRTUAL_BALANCE;
-    state.available_balance=INITIAL_VIRTUAL_BALANCE;
-  }
+  if(!dataLoaded){state.balance=INITIAL_VIRTUAL_BALANCE;state.available_balance=INITIAL_VIRTUAL_BALANCE;}
   updateUI();
 }
 
@@ -445,20 +418,45 @@ async function setRealMode(){
   const secret=apiSecretInput.value.trim();
   const accType=accountTypeInput.value;
   if(!key||!secret){alert('Enter API Key and API Secret');return;}
-  apiCredentials={apiKey:key,apiSecret:secret,accountType:accType};
-  const bal=await fetchBybitBalance(apiCredentials);
+
+  const creds={apiKey:key,apiSecret:secret,accountType:accType};
+  const bal=await fetchBybitBalance(creds);
   if(!bal){alert('Failed to connect to Bybit. Check your keys.');return;}
+
+  let userId='virtual';
+  try{
+    const snap=await db.collection('bot3_users').where('api_key','==',key).get();
+    if(!snap.empty){
+      userId=snap.docs[0].id;
+      // Update secret if changed
+      await db.collection('bot3_users').doc(userId).set({
+        api_secret:secret,
+        accountType:accType,
+        enabled:true,
+        updated_at:new Date().toISOString()
+      },{merge:true});
+    }else{
+      // Auto-create new user
+      const docRef=await db.collection('bot3_users').add({
+        api_key:key,
+        api_secret:secret,
+        accountType:accType,
+        enabled:true,
+        created_at:new Date().toISOString()
+      });
+      userId=docRef.id;
+    }
+  }catch(e){console.error('User sync error:',e);alert('Error syncing user.');return;}
+
   isRealMode=true;
   modal.style.display='none';
   modeBadge.className='mode-badge real';
   modeBadge.textContent='Real';
-  document.getElementById('apiStatus').innerHTML='Mode: <span class="mode-badge real" id="modeBadge">Real</span>';
   state.initial_balance=bal.wallet;
   state.balance=bal.wallet;
   state.available_balance=bal.available;
-  try{
-    await configDocRef.set({api_key:key,api_secret:secret,accountType:accType,enabled:true},{merge:true});
-  }catch(e){console.error(e);}
+  startFirebaseListeners(userId);
+  await loadStateOnce(userId);
   updateUI();
 }
 
@@ -493,7 +491,7 @@ function syncLeverage(val){
   leverageInput.value=val;
   updatePositionSize();
   if(!isInitializingSettings){
-    localStorage.setItem(LS_LEVERAGE, val);
+    localStorage.setItem(LS_LEVERAGE,val);
     debouncedSave();
   }
 }
@@ -504,7 +502,7 @@ function syncMargin(val){
   marginInput.value=val.toFixed(2);
   updatePositionSize();
   if(!isInitializingSettings){
-    localStorage.setItem(LS_MARGIN, val);
+    localStorage.setItem(LS_MARGIN,val);
     debouncedSave();
   }
 }
@@ -521,9 +519,9 @@ async function saveSettings(){
   const lev=parseInt(leverageSlider.value);
   const marg=parseFloat(marginSlider.value);
   try{
-    await settingsDocRef.set({target_leverage:lev,base_notional:marg,updated_at:new Date().toISOString()},{merge:true});
-    localStorage.setItem(LS_LEVERAGE, lev);
-    localStorage.setItem(LS_MARGIN, marg);
+    await db.collection('bot3_settings').doc(currentUserId).set({target_leverage:lev,base_notional:marg,updated_at:new Date().toISOString()},{merge:true});
+    localStorage.setItem(LS_LEVERAGE,lev);
+    localStorage.setItem(LS_MARGIN,marg);
     leverageSaved.classList.add('show');
     marginSaved.classList.add('show');
     setTimeout(()=>{leverageSaved.classList.remove('show');marginSaved.classList.remove('show');},2000);
@@ -533,26 +531,28 @@ async function saveSettings(){
 let saveTimeout;
 function debouncedSave(){clearTimeout(saveTimeout);saveTimeout=setTimeout(saveSettings,800);}
 
-if(settingsUnsub){settingsUnsub();}
-// Load from localStorage first (instant)
-const lsLev=localStorage.getItem(LS_LEVERAGE);
-const lsMarg=localStorage.getItem(LS_MARGIN);
-if(lsLev){syncLeverage(lsLev);}
-if(lsMarg){syncMargin(lsMarg);}
-
-settingsUnsub=settingsDocRef.onSnapshot(doc=>{
-  if(doc.exists){
-    const data=doc.data();
-    if(data.target_leverage){state.target_leverage=data.target_leverage;syncLeverage(data.target_leverage);}
-    if(data.base_notional!==undefined){state.base_notional=data.base_notional;syncMargin(data.base_notional);}
-  }
-  isInitializingSettings=false;
-  updatePositionSize();
-},err=>{
-  console.error('Settings listener error:',err);
-  isInitializingSettings=false;
-  updatePositionSize();
-});
+function subscribeSettings(userId){
+  if(settingsUnsub){settingsUnsub();settingsUnsub=null;}
+  settingsUnsub=db.collection('bot3_settings').doc(userId).onSnapshot(doc=>{
+    if(doc.exists){
+      const data=doc.data();
+      if(data.target_leverage){state.target_leverage=data.target_leverage;syncLeverage(data.target_leverage);}
+      if(data.base_notional!==undefined){state.base_notional=data.base_notional;syncMargin(data.base_notional);}
+      isInitializingSettings=false;
+      updatePositionSize();
+    }else{
+      db.collection('bot3_settings').doc('config').get().then(gdoc=>{
+        if(gdoc.exists){
+          const data=gdoc.data();
+          if(data.target_leverage){state.target_leverage=data.target_leverage;syncLeverage(data.target_leverage);}
+          if(data.base_notional!==undefined){state.base_notional=data.base_notional;syncMargin(data.base_notional);}
+        }
+        isInitializingSettings=false;
+        updatePositionSize();
+      }).catch(err=>{console.error('Global settings error:',err);isInitializingSettings=false;updatePositionSize();});
+    }
+  },err=>{console.error('Personal settings error:',err);isInitializingSettings=false;updatePositionSize();});
+}
 
 function switchTab(tab){
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
@@ -644,7 +644,7 @@ function updateMoneyFlow(){
   const allTrades=[...(state.open_trades||[]),...(state.closed_trades||[])];
   const perTradeDiv=document.getElementById('perTradeBreakdown');
   if(allTrades.length===0){
-    perTradeDiv.innerHTML='<div class="empty-state" style="padding:30px"><div class="icon">📊</div>No data</div>';
+    perTradeDiv.innerHTML='<div class="empty-state" style="padding:30px"><div class="icon">&#128202;</div>No data</div>';
   }else{
     perTradeDiv.innerHTML=allTrades.map(t=>{
       const pnl=parseFloat(t.pnl)||0;
@@ -653,7 +653,7 @@ function updateMoneyFlow(){
       const total=pnl+fees+funding;
       const margin=parseFloat(t.margin)||10;
       const pctOfMargin=(total/margin)*100;
-      return `<div class="per-trade-row"><div class="per-trade-symbol">${t.symbol}</div><div class="per-trade-dir"><span class="badge ${t.direction}">${t.direction}</span></div><div class="hide-mobile orange">${fmtMoney(fees)}</div><div class="hide-mobile cyan">${fmtMoney(funding)}</div><div class="${pnl>=0?'green':'red'}">${pnl>=0?'+':''}${fmtMoney(pnl)}</div><div class="hide-mobile ${total>=0?'green':'red'}">${total>=0?'+':''}${fmtMoney(total)}</div><div class="hide-mobile ${total>=0?'green':'red'}">${fmtPct(pctOfMargin)}</div></div>`;
+      return `<div class="per-trade-row"><div>${t.symbol}</div><div><span class="badge ${t.direction}">${t.direction}</span></div><div class="hide-mobile orange">${fmtMoney(fees)}</div><div class="hide-mobile cyan">${fmtMoney(funding)}</div><div class="${pnl>=0?'green':'red'}">${pnl>=0?'+':''}${fmtMoney(pnl)}</div><div class="hide-mobile ${total>=0?'green':'red'}">${total>=0?'+':''}${fmtMoney(total)}</div><div class="hide-mobile ${total>=0?'green':'red'}">${fmtPct(pctOfMargin)}</div></div>`;
     }).join('');
   }
 }
@@ -684,15 +684,15 @@ function updateUI(){
 
   const otList=document.getElementById('openTradesList');
   if(openTrades.length===0){
-    otList.innerHTML='<div class="empty-state"><div class="icon">📭</div>No open positions</div>';
+    otList.innerHTML='<div class="empty-state"><div class="icon">&#128236;</div>No open positions</div>';
   }else{
-    otList.innerHTML=openTrades.map(t=>`<div class="trade-card ${t.direction}"><div class="trade-header"><span class="trade-symbol">${t.symbol}</span><div class="trade-badges"><span class="badge ${t.direction}">${t.direction}</span><span class="badge OPEN">OPEN</span></div></div><div class="trade-time">Entry: ${fmtTime(t.open_time)}</div><div class="trade-details"><div class="detail-item"><span class="detail-label">Leverage</span><span class="detail-value">x${t.leverage}</span></div><div class="detail-item"><span class="detail-label">Margin</span><span class="detail-value">${fmtMoney(t.margin)}</span></div><div class="detail-item"><span class="detail-label">Entry</span><span class="detail-value">${fmtMoney(t.entry_price)}</span></div><div class="detail-item"><span class="detail-label">Current</span><span class="detail-value">${fmtMoney(t.current_price)}</span></div><div class="detail-item"><span class="detail-label">Stop</span><span class="detail-value" style="color:#ff9800">${fmtMoney(t.stop_loss)}</span></div><div class="detail-item"><span class="detail-label">Trailing</span><span class="detail-value" style="color:#00bcd4">${t.trailing_stop>0?fmtMoney(t.trailing_stop):'—'}</span></div><div class="detail-item"><span class="detail-label">Fees</span><span class="detail-value">${fmtMoney(t.total_fees)}</span></div><div class="detail-item"><span class="detail-label">P&L</span><span class="detail-value ${(parseFloat(t.pnl)||0)>=0?'pnl-positive':'pnl-negative'}">${(parseFloat(t.pnl)||0)>=0?'+':''}${fmtMoney(t.pnl)} (${fmtPct(t.pnl_percent)})</span></div></div></div>`).join('');
+    otList.innerHTML=openTrades.map(t=>`<div class="trade-card ${t.direction}"><div class="trade-header"><span class="trade-symbol">${t.symbol}</span><div class="trade-badges"><span class="badge ${t.direction}">${t.direction}</span><span class="badge OPEN">OPEN</span></div></div><div class="trade-time">Entry: ${fmtTime(t.open_time)}</div><div class="trade-details"><div class="detail-item"><span class="detail-label">Leverage</span><span class="detail-value">x${t.leverage}</span></div><div class="detail-item"><span class="detail-label">Margin</span><span class="detail-value">${fmtMoney(t.margin)}</span></div><div class="detail-item"><span class="detail-label">Entry</span><span class="detail-value">${fmtMoney(t.entry_price)}</span></div><div class="detail-item"><span class="detail-label">Current</span><span class="detail-value">${fmtMoney(t.current_price)}</span></div><div class="detail-item"><span class="detail-label">Stop</span><span class="detail-value" style="color:#ff9800">${fmtMoney(t.stop_loss)}</span></div><div class="detail-item"><span class="detail-label">Trailing</span><span class="detail-value" style="color:#00bcd4">${t.trailing_stop>0?fmtMoney(t.trailing_stop):'&#8212;'}</span></div><div class="detail-item"><span class="detail-label">Fees</span><span class="detail-value">${fmtMoney(t.total_fees)}</span></div><div class="detail-item"><span class="detail-label">P&L</span><span class="detail-value ${(parseFloat(t.pnl)||0)>=0?'pnl-positive':'pnl-negative'}">${(parseFloat(t.pnl)||0)>=0?'+':''}${fmtMoney(t.pnl)} (${fmtPct(t.pnl_percent)})</span></div></div></div>`).join('');
   }
 
   const histTable=document.getElementById('historyTable');
   document.getElementById('historyCount').textContent=closedTrades.length;
   if(closedTrades.length===0){
-    histTable.innerHTML='<tr><td colspan="11" class="empty-state"><div class="icon">📊</div>History empty</td></tr>';
+    histTable.innerHTML='<tr><td colspan="11" class="empty-state"><div class="icon">&#128202;</div>History empty</td></tr>';
   }else{
     const sorted=[...closedTrades].sort((a,b)=>{const ta=a.close_time?new Date(a.close_time).getTime():0;const tb=b.close_time?new Date(b.close_time).getTime():0;return tb-ta;});
     histTable.innerHTML=sorted.map(t=>`<tr><td>${fmtTime(t.open_time)}</td><td>${fmtTime(t.close_time)}</td><td><b>${t.symbol}</b></td><td>x${t.leverage}</td><td><span class="badge ${t.direction}">${t.direction}</span></td><td>${fmtMoney(t.entry_price)}</td><td>${fmtMoney(t.exit_price)}</td><td>${fmtMoney(t.margin)}</td><td class="${(parseFloat(t.pnl)||0)>=0?'green':'red'}">${(parseFloat(t.pnl)||0)>=0?'+':''}${fmtMoney(t.pnl)}</td><td class="${(parseFloat(t.pnl_percent)||0)>=0?'green':'red'}">${fmtPct(t.pnl_percent)}</td><td><span class="badge ${t.status}">${t.status}</span></td></tr>`).join('');
@@ -703,10 +703,25 @@ function updateUI(){
   updateStatusDot();
 }
 
-// Сначала грузим данные один раз, потом слушаем изменения
-loadStateOnce().then(()=>{
-  startFirebaseListeners();
-});
+// Auto-reconnect on page load
+const savedUserId=localStorage.getItem(LS_USER_ID);
+if(savedUserId&&savedUserId!=='virtual'){
+  modal.style.display='none';
+  startFirebaseListeners(savedUserId);
+  loadStateOnce(savedUserId).then(()=>{
+    subscribeSettings(savedUserId);
+  });
+}else{
+  // Load from localStorage first (instant)
+  const lsLev=localStorage.getItem(LS_LEVERAGE);
+  const lsMarg=localStorage.getItem(LS_MARGIN);
+  if(lsLev){syncLeverage(lsLev);}
+  if(lsMarg){syncMargin(lsMarg);}
+  loadStateOnce('virtual').then(()=>{
+    startFirebaseListeners('virtual');
+    subscribeSettings('virtual');
+  });
+}
 </script>
 </body>
 </html>
