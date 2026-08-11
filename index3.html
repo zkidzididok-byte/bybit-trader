@@ -128,7 +128,7 @@ td{padding:10px;border-bottom:1px solid #2a2f5a}tr:hover td{background:rgba(0,21
 <div class="container">
 <div class="header">
 <div><h1>Trading Bot 3</h1><div class="api-status" id="apiStatus">Mode: <span class="mode-badge virtual" id="modeBadge">Virtual</span></div><div class="user-id-badge" id="userIdBadge"></div><div class="last-seen" id="lastSeen"></div></div>
-<div class="status"><span class="dot" id="statusDot"></span><span id="statusText">Loading...</span></div>
+<div style="display:flex;align-items:center;gap:12px"><button class="btn btn-secondary" id="btnSwitchAccount" style="padding:8px 16px;font-size:.85em">Switch Account</button><div class="status"><span class="dot" id="statusDot"></span><span id="statusText">Loading...</span></div></div>
 </div>
 
 <div class="balance-section">
@@ -262,8 +262,10 @@ let currentUserId='virtual';
 let stateUnsub=null;
 let settingsUnsub=null;
 let configUnsub=null;
+let closedTradesUnsub=null;
 let lastBotUpdateTime=null;
 let dataLoaded=false;
+let closedTradesData=[];
 
 const LS_USER_ID='bot3_user_id';
 const LS_LEVERAGE='bot3_leverage';
@@ -316,6 +318,10 @@ function applyStateData(data){
   if(data.available_balance!==undefined) state.available_balance=parseFloat(data.available_balance)||0;
   else if(data.wallet_balance!==undefined) state.available_balance=parseFloat(data.wallet_balance)||0;
   if(!state.initial_balance||state.initial_balance===0) state.initial_balance=state.balance||INITIAL_VIRTUAL_BALANCE;
+  // Use win_count/loss_count from main doc, not closed_trades array
+  if(data.win_count!==undefined) state.win_count=data.win_count;
+  if(data.loss_count!==undefined) state.loss_count=data.loss_count;
+  if(data.total_trades!==undefined) state.total_trades=data.total_trades;
   if(data.updated_at) lastBotUpdateTime=new Date(data.updated_at);
   dataLoaded=true;
   updateUI();
@@ -349,6 +355,18 @@ function startFirebaseListeners(userId){
   stateUnsub=db.collection('trading_state').doc(userId).onSnapshot(doc=>{
     if(doc.exists) applyStateData(doc.data());
   },err=>{console.error('Firestore state error:',err);});
+
+  // Subscribe to closed_trades subcollection
+  if(closedTradesUnsub){closedTradesUnsub();closedTradesUnsub=null;}
+  closedTradesUnsub=db.collection('trading_state').doc(userId).collection('closed_trades').onSnapshot(snapshot=>{
+    closedTradesData=[];
+    snapshot.forEach(doc=>{closedTradesData.push(doc.data());});
+    state.closed_trades=closedTradesData;
+    state.total_trades=closedTradesData.length;
+    state.win_count=closedTradesData.filter(t=>(parseFloat(t.pnl)||0)>0).length;
+    state.loss_count=closedTradesData.length-state.win_count;
+    updateUI();
+  },err=>{console.error('Closed trades error:',err);});
 
   if(configUnsub){configUnsub();configUnsub=null;}
   configUnsub=db.collection('bot3_users').doc(userId).onSnapshot(doc=>{
@@ -456,14 +474,20 @@ async function setRealMode(){
   state.initial_balance=bal.wallet;
   state.balance=bal.wallet;
   state.available_balance=bal.available;
+  localStorage.setItem(LS_USER_ID,userId);
   startFirebaseListeners(userId);
   await loadStateOnce(userId);
   updateUI();
 }
 
-modalClose.addEventListener('click',setVirtualMode);
+modalClose.addEventListener('click',()=>{modal.style.display='none';});
 btnVirtual.addEventListener('click',setVirtualMode);
 btnConnect.addEventListener('click',setRealMode);
+document.getElementById('btnSwitchAccount').addEventListener('click',()=>{
+  modal.style.display='flex';
+  apiKeyInput.value='';
+  apiSecretInput.value='';
+});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&modal.style.display!=='none')setVirtualMode();});
 
 const leverageSlider=document.getElementById('leverageSlider');
@@ -651,7 +675,7 @@ function updateMoneyFlow(){
   document.getElementById('sankeyDrift').textContent=fmtMoney(drift);
   document.getElementById('sankeyDrift').style.color=Math.abs(drift)<0.01?'#00e676':'#ff9800';
 
-  const allTrades=[...(state.open_trades||[]),...(state.closed_trades||[])];
+  const allTrades=[...(state.open_trades||[]),...(closedTradesData||[])];
   const perTradeDiv=document.getElementById('perTradeBreakdown');
   if(allTrades.length===0){
     perTradeDiv.innerHTML='<div class="empty-state" style="padding:30px"><div class="icon">&#128202;</div>No data</div>';
@@ -682,9 +706,9 @@ function updateUI(){
   document.getElementById('openCountHeader').textContent=openTrades.length;
   document.getElementById('totalTrades').textContent=x.total_trades||0;
 
-  const closedTrades=x.closed_trades||[];
-  const wins=closedTrades.filter(t=>(parseFloat(t.pnl)||0)>0).length;
-  const losses=closedTrades.filter(t=>(parseFloat(t.pnl)||0)<0).length;
+  const closedTrades=closedTradesData||x.closed_trades||[];
+  const wins=x.win_count||closedTrades.filter(t=>(parseFloat(t.pnl)||0)>0).length;
+  const losses=x.loss_count||(closedTrades.length-wins);
   const liqs=closedTrades.filter(t=>t.status==='LIQUIDATED').length;
   const totalClosed=closedTrades.length;
   document.getElementById('winCount').textContent=wins;
@@ -721,12 +745,14 @@ const targetUserId=savedUserId||'virtual';
 async function initDashboard(){
   isInitializingSettings=true;
 
+  // If we have a saved user, connect to it in background
   if(targetUserId!=='virtual'){
-    modal.style.display='none';
+    startFirebaseListeners(targetUserId);
+    await loadStateOnce(targetUserId);
+  }else{
+    startFirebaseListeners('virtual');
+    await loadStateOnce('virtual');
   }
-
-  startFirebaseListeners(targetUserId);
-  await loadStateOnce(targetUserId);
 
   // Load settings from Firebase first
   const settingsDoc=await db.collection('bot3_settings').doc(targetUserId).get();
