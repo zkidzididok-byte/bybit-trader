@@ -131,9 +131,8 @@
         .progress-bar.pnl { background: #00e676; }
         .progress-bar.loss { background: #ff5252; }
 
-        /* ===== MODAL STYLES ===== */
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); z-index: 9999; display: flex; align-items: center; justify-content: center; }
-        .modal-box { background: linear-gradient(135deg, #1a1f3a, #0f1535); border-radius: 20px; padding: 35px; border: 1px solid #2a2f5a; max-width: 480px; width: 90%; position: relative; box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
+        .modal-box { background: linear-gradient(135deg, #1a1f3a, #0f1535); border-radius: 20px; padding: 35px; border: 1px solid #2a2f5a; max-width: 520px; width: 90%; position: relative; box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
         .modal-box h2 { font-size: 1.4em; background: linear-gradient(135deg, #00d4ff, #7b2cbf); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px; }
         .modal-sub { color: #8892b0; font-size: 0.9em; margin-bottom: 25px; }
         .modal-close { position: absolute; top: 18px; right: 20px; background: none; border: none; color: #8892b0; font-size: 1.6em; cursor: pointer; line-height: 1; transition: color 0.2s; }
@@ -154,6 +153,11 @@
         .mode-badge.real { background: rgba(0,230,118,0.15); color: #00e676; }
         .api-status { font-size: 0.8em; color: #8892b0; margin-top: 4px; }
 
+        .settings-bar { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 20px; }
+        .setting-pill { background: #0d1128; border: 1px solid #2a2f5a; border-radius: 10px; padding: 12px 16px; text-align: center; }
+        .setting-pill-label { font-size: 0.7em; color: #8892b0; text-transform: uppercase; letter-spacing: 1px; }
+        .setting-pill-value { font-size: 1.1em; font-weight: 700; color: #00d4ff; margin-top: 4px; }
+
         @media (max-width: 768px) {
             .balance-section { grid-template-columns: 1fr; }
             .stats-grid { grid-template-columns: repeat(2, 1fr); }
@@ -162,17 +166,21 @@
             .per-trade-row { grid-template-columns: 60px 60px 1fr 1fr; }
             .per-trade-row .hide-mobile { display: none; }
             .modal-box { padding: 25px 20px; }
+            .settings-bar { grid-template-columns: repeat(2, 1fr); }
         }
     </style>
 <base target="_blank">
 </head>
 <body>
-    <!-- ===== MODAL ===== -->
     <div class="modal-overlay" id="apiModal">
         <div class="modal-box">
             <button class="modal-close" id="modalClose" title="Виртуальный режим">&times;</button>
             <h2>🔑 API Bybit</h2>
-            <div class="modal-sub">Введите ключи для отображения реального баланса и сделок. Или закройте окно для виртуального режима ($2000).</div>
+            <div class="modal-sub">Введите ключи для запуска реальной торговли. Или закройте окно для виртуального режима ($2000).</div>
+            <div class="form-group">
+                <label class="form-label">User ID (имя для Firebase)</label>
+                <input type="text" class="form-input" id="userIdInput" placeholder="например, user1" autocomplete="off">
+            </div>
             <div class="form-group">
                 <label class="form-label">API Key</label>
                 <input type="text" class="form-input" id="apiKey" placeholder="Ваш API Key" autocomplete="off">
@@ -180,6 +188,10 @@
             <div class="form-group">
                 <label class="form-label">API Secret</label>
                 <input type="password" class="form-input" id="apiSecret" placeholder="Ваш API Secret" autocomplete="off">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Номинал сделки ($)</label>
+                <input type="number" class="form-input" id="notionalInput" value="10" min="5" step="1">
             </div>
             <div class="form-group">
                 <label class="form-label">Тип аккаунта</label>
@@ -190,7 +202,7 @@
             </div>
             <div class="modal-actions">
                 <button class="btn btn-secondary" id="btnVirtual">Виртуальный режим</button>
-                <button class="btn btn-primary" id="btnConnect">Подключить</button>
+                <button class="btn btn-primary" id="btnConnect">Подключить и запустить</button>
             </div>
         </div>
     </div>
@@ -207,6 +219,29 @@
             </div>
         </div>
 
+        <div class="settings-bar" id="settingsBar">
+            <div class="setting-pill">
+                <div class="setting-pill-label">Плечо</div>
+                <div class="setting-pill-value" id="settingLeverage">10x</div>
+            </div>
+            <div class="setting-pill">
+                <div class="setting-pill-label">Номинал</div>
+                <div class="setting-pill-value" id="settingNotional">$10</div>
+            </div>
+            <div class="setting-pill">
+                <div class="setting-pill-label">Стоп-лосс</div>
+                <div class="setting-pill-value" id="settingStop">-3%</div>
+            </div>
+            <div class="setting-pill">
+                <div class="setting-pill-label">Трейлинг</div>
+                <div class="setting-pill-value" id="settingTrailing">+2.5%→+2%</div>
+            </div>
+            <div class="setting-pill">
+                <div class="setting-pill-label">Маржа</div>
+                <div class="setting-pill-value" id="settingMargin">$1</div>
+            </div>
+        </div>
+
         <div class="balance-section">
             <div class="balance-card">
                 <div class="balance-label">Текущий баланс</div>
@@ -220,30 +255,12 @@
         </div>
 
         <div class="stats-grid">
-            <div class="stat-box">
-                <div class="stat-label">Открыто позиций</div>
-                <div class="stat-value" id="openCount">0</div>
-            </div>
-            <div class="stat-box">
-                <div class="stat-label">Всего сделок</div>
-                <div class="stat-value" id="totalTrades">0</div>
-            </div>
-            <div class="stat-box">
-                <div class="stat-label">Win Rate</div>
-                <div class="stat-value" id="winRate">0%</div>
-            </div>
-            <div class="stat-box">
-                <div class="stat-label">Прибыльных</div>
-                <div class="stat-value green" id="winCount">0</div>
-            </div>
-            <div class="stat-box">
-                <div class="stat-label">Убыточных</div>
-                <div class="stat-value red" id="lossCount">0</div>
-            </div>
-            <div class="stat-box">
-                <div class="stat-label">Ликвидировано</div>
-                <div class="stat-value red" id="liqCount">0</div>
-            </div>
+            <div class="stat-box"><div class="stat-label">Открыто позиций</div><div class="stat-value" id="openCount">0</div></div>
+            <div class="stat-box"><div class="stat-label">Всего сделок</div><div class="stat-value" id="totalTrades">0</div></div>
+            <div class="stat-box"><div class="stat-label">Win Rate</div><div class="stat-value" id="winRate">0%</div></div>
+            <div class="stat-box"><div class="stat-label">Прибыльных</div><div class="stat-value green" id="winCount">0</div></div>
+            <div class="stat-box"><div class="stat-label">Убыточных</div><div class="stat-value red" id="lossCount">0</div></div>
+            <div class="stat-box"><div class="stat-label">Ликвидировано</div><div class="stat-value red" id="liqCount">0</div></div>
         </div>
 
         <div class="tabs-nav">
@@ -271,17 +288,9 @@
                     <table>
                         <thead>
                             <tr>
-                                <th>Время откр.</th>
-                                <th>Время закр.</th>
-                                <th>Монета</th>
-                                <th>Плечо</th>
-                                <th>Напр.</th>
-                                <th>Вход</th>
-                                <th>Выход</th>
-                                <th>Маржа</th>
-                                <th>P&L $</th>
-                                <th>P&L %</th>
-                                <th>Статус</th>
+                                <th>Время откр.</th><th>Время закр.</th><th>Монета</th><th>Плечо</th>
+                                <th>Напр.</th><th>Вход</th><th>Выход</th><th>Маржа</th>
+                                <th>P&L $</th><th>P&L %</th><th>Статус</th>
                             </tr>
                         </thead>
                         <tbody id="historyTable">
@@ -295,9 +304,7 @@
 
         <div id="tab-moneyflow" class="tab-content">
             <div class="section">
-                <div class="section-header">
-                    <div class="section-title">💰 Куда уходят деньги (Бот 4)</div>
-                </div>
+                <div class="section-header"><div class="section-title">💰 Куда уходят деньги</div></div>
 
                 <div class="money-flow-grid">
                     <div class="flow-card fees">
@@ -350,44 +357,32 @@
                 </div>
 
                 <div style="margin-top: 20px;">
-                    <div class="section-header">
-                        <div class="section-title">📈 Визуализация потока</div>
-                    </div>
+                    <div class="section-header"><div class="section-title">📈 Визуализация потока</div></div>
                     <div class="sankey-flow" id="sankeyFlow">
                         <div class="sankey-row">
                             <div class="sankey-label">Начальный баланс</div>
-                            <div class="sankey-bar-wrap">
-                                <div class="sankey-bar income" id="sankeyStart" style="width: 100%">$2000</div>
-                            </div>
+                            <div class="sankey-bar-wrap"><div class="sankey-bar income" id="sankeyStart" style="width: 100%">$2000</div></div>
                             <div class="sankey-value" id="sankeyStartVal">$2000</div>
                         </div>
                         <div class="sankey-divider"></div>
                         <div class="sankey-row">
                             <div class="sankey-label">+ Реализованная прибыль</div>
-                            <div class="sankey-bar-wrap">
-                                <div class="sankey-bar income" id="sankeyClosedPnl" style="width: 0%">$0</div>
-                            </div>
+                            <div class="sankey-bar-wrap"><div class="sankey-bar income" id="sankeyClosedPnl" style="width: 0%">$0</div></div>
                             <div class="sankey-value green" id="sankeyClosedPnlVal">$0</div>
                         </div>
                         <div class="sankey-row">
                             <div class="sankey-label">+ Плавающая прибыль</div>
-                            <div class="sankey-bar-wrap">
-                                <div class="sankey-bar neutral" id="sankeyFloating" style="width: 0%">$0</div>
-                            </div>
+                            <div class="sankey-bar-wrap"><div class="sankey-bar neutral" id="sankeyFloating" style="width: 0%">$0</div></div>
                             <div class="sankey-value purple" id="sankeyFloatingVal">$0</div>
                         </div>
                         <div class="sankey-row">
                             <div class="sankey-label">− Комиссии</div>
-                            <div class="sankey-bar-wrap">
-                                <div class="sankey-bar expense" id="sankeyFees" style="width: 0%">$0</div>
-                            </div>
+                            <div class="sankey-bar-wrap"><div class="sankey-bar expense" id="sankeyFees" style="width: 0%">$0</div></div>
                             <div class="sankey-value red" id="sankeyFeesVal">$0</div>
                         </div>
                         <div class="sankey-row">
                             <div class="sankey-label">− Фандинг</div>
-                            <div class="sankey-bar-wrap">
-                                <div class="sankey-bar expense" id="sankeyFunding" style="width: 0%">$0</div>
-                            </div>
+                            <div class="sankey-bar-wrap"><div class="sankey-bar expense" id="sankeyFunding" style="width: 0%">$0</div></div>
                             <div class="sankey-value red" id="sankeyFundingVal">$0</div>
                         </div>
                         <div class="sankey-divider"></div>
@@ -403,18 +398,12 @@
                 </div>
 
                 <div class="per-trade-breakdown" style="margin-top: 20px;">
-                    <div class="section-header">
-                        <div class="section-title">📋 Разбивка по сделкам</div>
-                    </div>
+                    <div class="section-header"><div class="section-title">📋 Разбивка по сделкам</div></div>
                     <div style="overflow-x:auto">
                         <div class="per-trade-row header">
-                            <div>Монета</div>
-                            <div>Напр.</div>
-                            <div class="hide-mobile">Комиссии</div>
-                            <div class="hide-mobile">Фандинг</div>
-                            <div>P&L</div>
-                            <div class="hide-mobile">Всего</div>
-                            <div class="hide-mobile">% от маржи</div>
+                            <div>Монета</div><div>Напр.</div><div class="hide-mobile">Комиссии</div>
+                            <div class="hide-mobile">Фандинг</div><div>P&L</div>
+                            <div class="hide-mobile">Всего</div><div class="hide-mobile">% от маржи</div>
                         </div>
                         <div id="perTradeBreakdown">
                             <div class="empty-state" style="padding: 30px;"><div class="icon">📊</div>Нет данных</div>
@@ -438,9 +427,9 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
-        // ===== MODE STATE =====
         let isRealMode = false;
         let apiCredentials = null;
+        let currentUserId = null;
         let bybitPositions = [];
         let bybitBalance = { wallet: 0, available: 0 };
 
@@ -477,7 +466,6 @@
             });
         };
 
-        // ===== BYBIT API HELPERS =====
         function generateSignature(apiSecret, timestamp, recvWindow, queryString) {
             const message = timestamp + apiSecret + recvWindow + queryString;
             return CryptoJS.HmacSHA256(message, apiSecret).toString();
@@ -489,7 +477,6 @@
                 const recvWindow = '5000';
                 const query = `accountType=${creds.accountType}`;
                 const sign = generateSignature(creds.apiSecret, timestamp, recvWindow, query);
-
                 const resp = await fetch(`https://api.bybit.com/v5/account/wallet-balance?${query}`, {
                     headers: {
                         'X-BAPI-API-KEY': creds.apiKey,
@@ -501,10 +488,7 @@
                 const data = await resp.json();
                 if (data.retCode === 0 && data.result && data.result.list && data.result.list[0]) {
                     const acc = data.result.list[0];
-                    return {
-                        wallet: parseFloat(acc.totalEquity) || 0,
-                        available: parseFloat(acc.totalAvailableBalance) || 0
-                    };
+                    return { wallet: parseFloat(acc.totalEquity) || 0, available: parseFloat(acc.totalAvailableBalance) || 0 };
                 }
                 return null;
             } catch (e) {
@@ -519,7 +503,6 @@
                 const recvWindow = '5000';
                 const query = 'category=linear&limit=200';
                 const sign = generateSignature(creds.apiSecret, timestamp, recvWindow, query);
-
                 const resp = await fetch(`https://api.bybit.com/v5/position/list?${query}`, {
                     headers: {
                         'X-BAPI-API-KEY': creds.apiKey,
@@ -539,7 +522,6 @@
             }
         }
 
-        // ===== MODAL LOGIC =====
         const modal = document.getElementById('apiModal');
         const modalClose = document.getElementById('modalClose');
         const btnVirtual = document.getElementById('btnVirtual');
@@ -547,12 +529,15 @@
         const apiKeyInput = document.getElementById('apiKey');
         const apiSecretInput = document.getElementById('apiSecret');
         const accountTypeInput = document.getElementById('accountType');
+        const userIdInput = document.getElementById('userIdInput');
+        const notionalInput = document.getElementById('notionalInput');
         const modeBadge = document.getElementById('modeBadge');
         const apiStatus = document.getElementById('apiStatus');
 
         function setVirtualMode() {
             isRealMode = false;
             apiCredentials = null;
+            currentUserId = null;
             modal.style.display = 'none';
             modeBadge.className = 'mode-badge virtual';
             modeBadge.textContent = '🎮 Виртуальный';
@@ -564,23 +549,35 @@
         }
 
         async function setRealMode() {
+            const userId = userIdInput.value.trim();
             const key = apiKeyInput.value.trim();
             const secret = apiSecretInput.value.trim();
             const accType = accountTypeInput.value;
+            const notional = parseFloat(notionalInput.value) || 10;
 
-            if (!key || !secret) {
-                alert('Введите API Key и API Secret');
-                return;
-            }
+            if (!userId) { alert('Введите User ID (имя пользователя)'); return; }
+            if (!key || !secret) { alert('Введите API Key и API Secret'); return; }
 
             apiCredentials = { apiKey: key, apiSecret: secret, accountType: accType };
+            currentUserId = userId;
 
-            // Test connection
             const bal = await fetchBybitBalance(apiCredentials);
-            if (!bal) {
-                alert('Не удалось подключиться к Bybit. Проверьте ключи.');
-                return;
-            }
+            if (!bal) { alert('Не удалось подключиться к Bybit. Проверьте ключи.'); return; }
+
+            try {
+                await db.collection('bybit_config').doc(userId).set({
+                    api_key: key, api_secret: secret, enabled: true,
+                    accountType: accType, createdAt: new Date().toISOString()
+                });
+                await db.collection('bot2_settings').doc('config').set({
+                    target_leverage: 10, base_notional: notional,
+                    stop_loss_pct: 0.03, trailing_levels: [[0.025, 0.02]],
+                    fee_rate: 0.0009, open_hours: [22, 2, 6, 10, 14, 18],
+                    open_minute: 55, check_minute: 54,
+                    updatedAt: new Date().toISOString()
+                }, { merge: true });
+                console.log('Saved to Firebase');
+            } catch (e) { console.error('Firebase save error:', e); }
 
             isRealMode = true;
             bybitBalance = bal;
@@ -601,28 +598,16 @@
         btnVirtual.addEventListener('click', setVirtualMode);
         btnConnect.addEventListener('click', setRealMode);
 
-        // Close modal on Escape
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && modal.style.display !== 'none') {
-                setVirtualMode();
-            }
+            if (e.key === 'Escape' && modal.style.display !== 'none') setVirtualMode();
         });
 
-        // ===== REAL DATA REFRESH =====
         async function refreshRealData() {
             if (!isRealMode || !apiCredentials) return;
-
             const bal = await fetchBybitBalance(apiCredentials);
-            if (bal) {
-                bybitBalance = bal;
-                state.balance = bal.wallet;
-                state.available_balance = bal.available;
-            }
-
+            if (bal) { bybitBalance = bal; state.balance = bal.wallet; state.available_balance = bal.available; }
             const positions = await fetchBybitPositions(apiCredentials);
             bybitPositions = positions;
-
-            // Convert Bybit positions to our trade format
             state.open_trades = positions.map(p => {
                 const side = p.side === 'Buy' ? 'LONG' : 'SHORT';
                 const entryPrice = parseFloat(p.avgPrice) || parseFloat(p.entryPrice) || 0;
@@ -631,50 +616,27 @@
                 const leverage = parseFloat(p.leverage) || 10;
                 const notional = size * entryPrice;
                 const margin = notional / leverage;
-
                 let pnl = 0;
-                if (side === 'LONG') {
-                    pnl = (markPrice - entryPrice) * size;
-                } else {
-                    pnl = (entryPrice - markPrice) * size;
-                }
+                if (side === 'LONG') pnl = (markPrice - entryPrice) * size;
+                else pnl = (entryPrice - markPrice) * size;
                 const pnlPct = entryPrice > 0 ? (pnl / margin) * 100 : 0;
-
                 return {
-                    id: p.symbol + '_' + Date.now(),
-                    symbol: p.symbol,
-                    direction: side,
-                    entry_price: entryPrice,
-                    current_price: markPrice,
-                    quantity: size,
-                    leverage: leverage,
-                    margin: margin,
-                    notional: notional,
-                    pnl: pnl,
-                    pnl_percent: pnlPct,
+                    id: p.symbol + '_' + Date.now(), symbol: p.symbol, direction: side,
+                    entry_price: entryPrice, current_price: markPrice, quantity: size,
+                    leverage: leverage, margin: margin, notional: notional,
+                    pnl: pnl, pnl_percent: pnlPct,
                     stop_loss: parseFloat(p.stopLoss) || 0,
                     trailing_stop: parseFloat(p.trailingStop) || 0,
-                    trailing_level: -1,
-                    highest_profit_pct: 0,
-                    open_time: new Date().toISOString(),
-                    status: 'OPEN',
-                    entry_fee: 0,
-                    exit_fee: 0,
-                    total_fees: 0,
-                    funding_paid: 0,
-                    total_funding: 0
+                    trailing_level: -1, highest_profit_pct: 0,
+                    open_time: new Date().toISOString(), status: 'OPEN',
+                    entry_fee: 0, exit_fee: 0, total_fees: 0, funding_paid: 0, total_funding: 0
                 };
             });
-
             state.unrealized_pnl = state.open_trades.reduce((sum, t) => sum + (parseFloat(t.pnl) || 0), 0);
         }
 
-        // Periodic refresh for real mode
         setInterval(async () => {
-            if (isRealMode) {
-                await refreshRealData();
-                updateUI();
-            }
+            if (isRealMode) { await refreshRealData(); updateUI(); }
         }, 5000);
 
         function switchTab(tab) {
@@ -688,59 +650,38 @@
             const openTrades = state.open_trades || [];
             const closedTrades = state.closed_trades || [];
             const allTrades = [...openTrades, ...closedTrades];
-
-            let totalFees = 0;
-            let feesEntry = 0, feesExit = 0, feesOpen = 0, feesClose = 0;
-
+            let totalFees = 0, feesEntry = 0, feesExit = 0, feesOpen = 0, feesClose = 0;
             allTrades.forEach(t => {
                 const entryFee = parseFloat(t.entry_fee) || parseFloat(t.fee_open) || 0;
                 const exitFee = parseFloat(t.exit_fee) || parseFloat(t.fee_close) || 0;
                 const openFee = parseFloat(t.open_fee) || 0;
                 const closeFee = parseFloat(t.close_fee) || 0;
                 const totalFee = parseFloat(t.total_fees) || (entryFee + exitFee + openFee + closeFee);
-
-                totalFees += totalFee;
-                feesEntry += entryFee;
-                feesExit += exitFee;
-                feesOpen += openFee;
-                feesClose += closeFee;
+                totalFees += totalFee; feesEntry += entryFee; feesExit += exitFee; feesOpen += openFee; feesClose += closeFee;
             });
-
-            let totalFunding = 0;
-            let fundingPositive = 0, fundingNegative = 0;
-            let fundingOpen = 0, fundingClosed = 0;
-
+            let totalFunding = 0, fundingPositive = 0, fundingNegative = 0, fundingOpen = 0, fundingClosed = 0;
             allTrades.forEach(t => {
                 const funding = parseFloat(t.funding_paid) || parseFloat(t.total_funding) || 0;
                 totalFunding += funding;
-
                 if (funding > 0) fundingPositive += funding;
                 if (funding < 0) fundingNegative += funding;
-
                 if (t.status === 'OPEN') fundingOpen += funding;
                 else fundingClosed += funding;
             });
-
-            let totalFloating = 0;
-            let floatingProfit = 0, floatingLoss = 0;
-
+            let totalFloating = 0, floatingProfit = 0, floatingLoss = 0;
             openTrades.forEach(t => {
                 const pnl = parseFloat(t.pnl) || 0;
                 totalFloating += pnl;
                 if (pnl > 0) floatingProfit += pnl;
                 if (pnl < 0) floatingLoss += pnl;
             });
-
-            let totalClosedPnl = 0;
-            let closedProfit = 0, closedLoss = 0;
-
+            let totalClosedPnl = 0, closedProfit = 0, closedLoss = 0;
             closedTrades.forEach(t => {
                 const pnl = parseFloat(t.pnl) || 0;
                 totalClosedPnl += pnl;
                 if (pnl > 0) closedProfit += pnl;
                 if (pnl < 0) closedLoss += pnl;
             });
-
             return {
                 totalFees, feesEntry, feesExit, feesOpen, feesClose,
                 totalFunding, fundingPositive, fundingNegative, fundingOpen, fundingClosed,
@@ -751,25 +692,21 @@
 
         function updateMoneyFlow() {
             const flow = calcMoneyFlow();
-
             document.getElementById('totalFees').textContent = fmtMoney(flow.totalFees);
             document.getElementById('feesEntry').textContent = fmtMoney(flow.feesEntry);
             document.getElementById('feesExit').textContent = fmtMoney(flow.feesExit);
             document.getElementById('feesOpen').textContent = fmtMoney(flow.feesOpen);
             document.getElementById('feesClose').textContent = fmtMoney(flow.feesClose);
-
             document.getElementById('totalFunding').textContent = fmtMoney(flow.totalFunding);
             document.getElementById('fundingPositive').textContent = fmtMoney(flow.fundingPositive);
             document.getElementById('fundingNegative').textContent = fmtMoney(flow.fundingNegative);
             document.getElementById('fundingOpen').textContent = fmtMoney(flow.fundingOpen);
             document.getElementById('fundingClosed').textContent = fmtMoney(flow.fundingClosed);
-
             document.getElementById('totalFloating').textContent = fmtMoney(flow.totalFloating);
             document.getElementById('floatingProfit').textContent = fmtMoney(flow.floatingProfit);
             document.getElementById('floatingLoss').textContent = fmtMoney(flow.floatingLoss);
             document.getElementById('floatingCount').textContent = flow.floatingCount;
             document.getElementById('floatingAvg').textContent = flow.floatingCount > 0 ? fmtMoney(flow.totalFloating / flow.floatingCount) : '$0';
-
             document.getElementById('totalClosedPnl').textContent = fmtMoney(flow.totalClosedPnl);
             document.getElementById('closedProfit').textContent = fmtMoney(flow.closedProfit);
             document.getElementById('closedLoss').textContent = fmtMoney(flow.closedLoss);
@@ -779,34 +716,27 @@
             const startBalance = parseFloat(state.initial_balance) || parseFloat(state.wallet_balance) || INITIAL_VIRTUAL_BALANCE;
             const currentBalance = parseFloat(state.balance) || INITIAL_VIRTUAL_BALANCE;
             const maxBar = Math.max(startBalance, Math.abs(flow.totalClosedPnl), Math.abs(flow.totalFloating), Math.abs(flow.totalFees), Math.abs(flow.totalFunding), currentBalance);
-
             const pct = (v) => Math.min(100, Math.max(0, (Math.abs(v) / maxBar) * 100));
 
             document.getElementById('sankeyStart').style.width = pct(startBalance) + '%';
             document.getElementById('sankeyStart').textContent = fmtMoney(startBalance);
             document.getElementById('sankeyStartVal').textContent = fmtMoney(startBalance);
-
             document.getElementById('sankeyClosedPnl').style.width = pct(flow.totalClosedPnl) + '%';
             document.getElementById('sankeyClosedPnl').textContent = fmtMoney(flow.totalClosedPnl);
             document.getElementById('sankeyClosedPnlVal').textContent = fmtMoney(flow.totalClosedPnl);
             document.getElementById('sankeyClosedPnlVal').className = 'sankey-value ' + (flow.totalClosedPnl >= 0 ? 'green' : 'red');
-
             document.getElementById('sankeyFloating').style.width = pct(flow.totalFloating) + '%';
             document.getElementById('sankeyFloating').textContent = fmtMoney(flow.totalFloating);
             document.getElementById('sankeyFloatingVal').textContent = fmtMoney(flow.totalFloating);
             document.getElementById('sankeyFloatingVal').className = 'sankey-value ' + (flow.totalFloating >= 0 ? 'purple' : 'red');
-
             document.getElementById('sankeyFees').style.width = pct(flow.totalFees) + '%';
             document.getElementById('sankeyFees').textContent = fmtMoney(flow.totalFees);
             document.getElementById('sankeyFeesVal').textContent = fmtMoney(flow.totalFees);
-
             document.getElementById('sankeyFunding').style.width = pct(Math.abs(flow.totalFunding)) + '%';
             document.getElementById('sankeyFunding').textContent = fmtMoney(flow.totalFunding);
             document.getElementById('sankeyFundingVal').textContent = fmtMoney(flow.totalFunding);
-
             document.getElementById('sankeyNet').textContent = fmtMoney(currentBalance);
             document.getElementById('sankeyNet').className = 'sankey-net-value ' + (currentBalance >= startBalance ? 'green' : 'red');
-
             const calculated = startBalance + flow.totalClosedPnl + flow.totalFloating - flow.totalFees - flow.totalFunding;
             const drift = currentBalance - calculated;
             document.getElementById('sankeyDrift').textContent = fmtMoney(drift);
@@ -814,17 +744,9 @@
 
             const allTrades = [...(state.open_trades || []), ...(state.closed_trades || [])];
             const perTradeDiv = document.getElementById('perTradeBreakdown');
-
             if (allTrades.length === 0) {
                 perTradeDiv.innerHTML = `<div class="empty-state" style="padding: 30px;"><div class="icon">📊</div>Нет данных</div>`;
             } else {
-                const maxAbsTotal = Math.max(...allTrades.map(t => {
-                    const pnl = parseFloat(t.pnl) || 0;
-                    const fees = parseFloat(t.total_fees) || 0;
-                    const funding = parseFloat(t.funding_paid) || parseFloat(t.total_funding) || 0;
-                    return Math.abs(pnl + fees + funding);
-                }), 0.01);
-
                 perTradeDiv.innerHTML = allTrades.map(t => {
                     const pnl = parseFloat(t.pnl) || 0;
                     const fees = parseFloat(t.total_fees) || (parseFloat(t.entry_fee) || 0) + (parseFloat(t.exit_fee) || 0) + (parseFloat(t.open_fee) || 0) + (parseFloat(t.close_fee) || 0);
@@ -832,28 +754,23 @@
                     const total = pnl + fees + funding;
                     const margin = parseFloat(t.margin) || 10;
                     const pctOfMargin = (total / margin) * 100;
-
-                    return `
-                        <div class="per-trade-row">
-                            <div class="per-trade-symbol">${t.symbol}</div>
-                            <div class="per-trade-dir"><span class="badge ${t.direction}">${t.direction}</span></div>
-                            <div class="hide-mobile orange">${fmtMoney(fees)}</div>
-                            <div class="hide-mobile cyan">${fmtMoney(funding)}</div>
-                            <div class="${pnl >= 0 ? 'green' : 'red'}">${pnl >= 0 ? '+' : ''}${fmtMoney(pnl)}</div>
-                            <div class="hide-mobile ${total >= 0 ? 'green' : 'red'}">${total >= 0 ? '+' : ''}${fmtMoney(total)}</div>
-                            <div class="hide-mobile ${total >= 0 ? 'green' : 'red'}">${fmtPct(pctOfMargin)}</div>
-                        </div>
-                    `;
+                    return `<div class="per-trade-row">
+                        <div class="per-trade-symbol">${t.symbol}</div>
+                        <div class="per-trade-dir"><span class="badge ${t.direction}">${t.direction}</span></div>
+                        <div class="hide-mobile orange">${fmtMoney(fees)}</div>
+                        <div class="hide-mobile cyan">${fmtMoney(funding)}</div>
+                        <div class="${pnl >= 0 ? 'green' : 'red'}">${pnl >= 0 ? '+' : ''}${fmtMoney(pnl)}</div>
+                        <div class="hide-mobile ${total >= 0 ? 'green' : 'red'}">${total >= 0 ? '+' : ''}${fmtMoney(total)}</div>
+                        <div class="hide-mobile ${total >= 0 ? 'green' : 'red'}">${fmtPct(pctOfMargin)}</div>
+                    </div>`;
                 }).join('');
             }
         }
 
         function updateUI() {
             const x = state;
-
             document.getElementById('balance').textContent = fmtMoney(x.balance);
             document.getElementById('available').textContent = fmtMoney(x.available_balance);
-
             const initialBal = parseFloat(x.initial_balance) || parseFloat(x.wallet_balance) || INITIAL_VIRTUAL_BALANCE;
             const pnl = (parseFloat(x.balance) || 0) - initialBal;
             const pnlPct = ((pnl / initialBal) * 100);
@@ -861,26 +778,19 @@
                 `<span class="${pnl >= 0 ? 'green' : 'red'}">${pnl >= 0 ? '+' : ''}${fmtMoney(pnl)} (${pnl >= 0 ? '+' : ''}${pnlPct.toFixed(2)}%)</span>`;
 
             const openTrades = x.open_trades || [];
-
             document.getElementById('openCount').textContent = openTrades.length;
             document.getElementById('openCountHeader').textContent = openTrades.length;
-
             const totalTrades = x.total_trades || 0;
             document.getElementById('totalTrades').textContent = totalTrades;
-
             const closedTrades = x.closed_trades || [];
             const wins = closedTrades.filter(t => (parseFloat(t.pnl) || 0) > 0).length;
             const losses = closedTrades.filter(t => (parseFloat(t.pnl) || 0) < 0).length;
             const liqs = closedTrades.filter(t => t.status === 'LIQUIDATED').length;
             const totalClosed = closedTrades.length;
-
             document.getElementById('winCount').textContent = wins;
             document.getElementById('lossCount').textContent = losses;
             document.getElementById('liqCount').textContent = liqs;
-
-            document.getElementById('winRate').textContent = totalClosed > 0 
-                ? ((wins / totalClosed) * 100).toFixed(1) + '%' 
-                : '0%';
+            document.getElementById('winRate').textContent = totalClosed > 0 ? ((wins / totalClosed) * 100).toFixed(1) + '%' : '0%';
 
             const otList = document.getElementById('openTradesList');
             if (openTrades.length === 0) {
@@ -897,40 +807,14 @@
                         </div>
                         <div class="trade-time">Зашёл: ${fmtTime(t.open_time)}</div>
                         <div class="trade-details">
-                            <div class="detail-item">
-                                <span class="detail-label">Плечо</span>
-                                <span class="detail-value">x${t.leverage}</span>
-                            </div>
-                            <div class="detail-item">
-                                <span class="detail-label">Маржа</span>
-                                <span class="detail-value">${fmtMoney(t.margin)}</span>
-                            </div>
-                            <div class="detail-item">
-                                <span class="detail-label">Вход</span>
-                                <span class="detail-value">${fmtMoney(t.entry_price)}</span>
-                            </div>
-                            <div class="detail-item">
-                                <span class="detail-label">Текущая</span>
-                                <span class="detail-value">${fmtMoney(t.current_price)}</span>
-                            </div>
-                            <div class="detail-item">
-                                <span class="detail-label">Стоп</span>
-                                <span class="detail-value" style="color:#ff9800">${fmtMoney(t.stop_loss)}</span>
-                            </div>
-                            <div class="detail-item">
-                                <span class="detail-label">Трейлинг</span>
-                                <span class="detail-value" style="color:#00bcd4">${t.trailing_stop > 0 ? fmtMoney(t.trailing_stop) : '—'}</span>
-                            </div>
-                            <div class="detail-item">
-                                <span class="detail-label">Комиссии</span>
-                                <span class="detail-value">${fmtMoney(t.total_fees)}</span>
-                            </div>
-                            <div class="detail-item">
-                                <span class="detail-label">P&L</span>
-                                <span class="detail-value ${(parseFloat(t.pnl) || 0) >= 0 ? 'pnl-positive' : 'pnl-negative'}">
-                                    ${(parseFloat(t.pnl) || 0) >= 0 ? '+' : ''}${fmtMoney(t.pnl)} (${fmtPct(t.pnl_percent)})
-                                </span>
-                            </div>
+                            <div class="detail-item"><span class="detail-label">Плечо</span><span class="detail-value">x${t.leverage}</span></div>
+                            <div class="detail-item"><span class="detail-label">Маржа</span><span class="detail-value">${fmtMoney(t.margin)}</span></div>
+                            <div class="detail-item"><span class="detail-label">Вход</span><span class="detail-value">${fmtMoney(t.entry_price)}</span></div>
+                            <div class="detail-item"><span class="detail-label">Текущая</span><span class="detail-value">${fmtMoney(t.current_price)}</span></div>
+                            <div class="detail-item"><span class="detail-label">Стоп (-3%)</span><span class="detail-value" style="color:#ff9800">${fmtMoney(t.stop_loss)}</span></div>
+                            <div class="detail-item"><span class="detail-label">Трейлинг (+2%)</span><span class="detail-value" style="color:#00bcd4">${t.trailing_stop > 0 ? fmtMoney(t.trailing_stop) : '—'}</span></div>
+                            <div class="detail-item"><span class="detail-label">Комиссии</span><span class="detail-value">${fmtMoney(t.total_fees)}</span></div>
+                            <div class="detail-item"><span class="detail-label">P&L</span><span class="detail-value ${(parseFloat(t.pnl) || 0) >= 0 ? 'pnl-positive' : 'pnl-negative'}">${(parseFloat(t.pnl) || 0) >= 0 ? '+' : ''}${fmtMoney(t.pnl)} (${fmtPct(t.pnl_percent)})</span></div>
                         </div>
                     </div>
                 `).join('');
@@ -938,7 +822,6 @@
 
             const histTable = document.getElementById('historyTable');
             document.getElementById('historyCount').textContent = closedTrades.length;
-
             if (closedTrades.length === 0) {
                 histTable.innerHTML = `<tr><td colspan="11" class="empty-state"><div class="icon">📊</div>История пуста</td></tr>`;
             } else {
@@ -947,7 +830,6 @@
                     const tb = b.close_time ? new Date(b.close_time).getTime() : 0;
                     return tb - ta;
                 });
-
                 histTable.innerHTML = sorted.map(t => `
                     <tr>
                         <td>${fmtTime(t.open_time)}</td>
@@ -967,7 +849,6 @@
 
             const dot = document.getElementById('statusDot');
             const statusText = document.getElementById('statusText');
-
             if (x.updated_at || isRealMode) {
                 dot.className = 'dot online';
                 statusText.textContent = isRealMode ? 'Bybit API' : 'Онлайн';
@@ -975,14 +856,11 @@
                 dot.className = 'dot';
                 statusText.textContent = 'Ожидание данных';
             }
-
-            document.getElementById('lastUpdate').textContent = 
-                'Обновлено: ' + new Date().toLocaleTimeString('ru-RU');
-
+            document.getElementById('lastUpdate').textContent = 'Обновлено: ' + new Date().toLocaleTimeString('ru-RU');
             updateMoneyFlow();
         }
 
-        // ✅ Подписка на trading_state/bot2 (для второго бота)
+        // Подписка на trading_state для виртуального режима
         db.collection('trading_state').doc('bot2').onSnapshot((doc) => {
             if (doc.exists && !isRealMode) {
                 const data = doc.data();
@@ -996,8 +874,26 @@
                 document.getElementById('statusText').textContent = 'Ошибка подключения';
             }
         });
+
+        // Подписка на настройки для отображения
+        db.collection('bot2_settings').doc('config').onSnapshot((doc) => {
+            if (doc.exists) {
+                const data = doc.data();
+                const leverage = data.target_leverage || 10;
+                const notional = data.base_notional || 10;
+                const stop = data.stop_loss_pct || 0.03;
+                const trailing = data.trailing_levels || [[0.025, 0.02]];
+                document.getElementById('settingLeverage').textContent = leverage + 'x';
+                document.getElementById('settingNotional').textContent = '$' + notional;
+                document.getElementById('settingStop').textContent = '-' + (stop * 100).toFixed(0) + '%';
+                if (trailing && trailing.length > 0) {
+                    const t = trailing[0];
+                    document.getElementById('settingTrailing').textContent = '+' + (t[0]*100).toFixed(1) + '%→+' + (t[1]*100).toFixed(0) + '%';
+                }
+                document.getElementById('settingMargin').textContent = '$' + (notional / leverage).toFixed(2);
+            }
+        });
     </script>
-    <!-- CryptoJS for HMAC-SHA256 signature generation -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
 </body>
 </html>
