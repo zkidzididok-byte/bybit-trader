@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -94,7 +95,6 @@
             <button class="modal-close" id="modalClose" title="Виртуальный режим">&times;</button>
             <h2>🔑 API Bybit</h2>
             <div class="modal-sub">Введите ключи для реальной торговли. Или закройте окно для виртуального режима ($2000). Повторный ввод тех же ключей автоматически откроет ваш аккаунт.</div>
-            
             <div class="form-group">
                 <label class="form-label">API Key</label>
                 <input type="text" class="form-input" id="apiKey" placeholder="Ваш API Key" autocomplete="off">
@@ -150,7 +150,6 @@
             <div class="stat-box"><div class="stat-label">Win Rate</div><div class="stat-value" id="winRate">0%</div></div>
             <div class="stat-box"><div class="stat-label">Прибыльных</div><div class="stat-value green" id="winCount">0</div></div>
             <div class="stat-box"><div class="stat-label">Убыточных</div><div class="stat-value red" id="lossCount">0</div></div>
-            <div class="stat-box"><div class="stat-label">Ликвидировано</div><div class="stat-value red" id="liqCount">0</div></div>
         </div>
 
         <div class="tabs-nav">
@@ -171,7 +170,7 @@
 
             <div class="section">
                 <div class="section-header">
-                    <div class="section-title">История сделок (последние 50)</div>
+                    <div class="section-title">История сделок (за всё время)</div>
                     <div class="section-count" id="historyCount">0</div>
                 </div>
                 <div style="overflow-x:auto">
@@ -195,7 +194,6 @@
         <div id="tab-moneyflow" class="tab-content">
             <div class="section">
                 <div class="section-header"><div class="section-title">💰 Куда уходят деньги</div></div>
-                
                 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:15px;margin-bottom:20px;">
                     <div style="background:linear-gradient(135deg,#0d1128,#1a1f3a);border-radius:14px;padding:20px;border:1px solid #2a2f5a;">
                         <div style="font-size:0.8em;color:#8892b0;text-transform:uppercase;">🔴 Комиссии (всего)</div>
@@ -241,14 +239,15 @@
         let isRealMode = false;
         let currentUserId = 'demo';
         let stateUnsub = null;
+        let historyUnsub = null;
         let lastBotUpdateTime = null;
+        let allClosedTrades = [];
 
         let state = {
             balance: INITIAL_VIRTUAL_BALANCE,
             available_balance: INITIAL_VIRTUAL_BALANCE,
             wallet_balance: INITIAL_VIRTUAL_BALANCE,
             open_trades: [],
-            recent_closed_trades: [],
             total_trades: 0,
             total_fees_paid: 0,
             total_funding_paid: 0,
@@ -300,13 +299,14 @@
         }
 
         function listenToState(userId) {
-            if (stateUnsub) {
-                stateUnsub();
-                stateUnsub = null;
-            }
+            if (stateUnsub) { stateUnsub(); stateUnsub = null; }
+            if (historyUnsub) { historyUnsub(); historyUnsub = null; }
             currentUserId = userId;
-            const ref = db.collection('trading_state').doc(BOT_ID).collection('users').doc(userId);
-            stateUnsub = ref.onSnapshot(doc => {
+            allClosedTrades = [];
+
+            const userRef = db.collection('trading_state').doc(BOT_ID).collection('users').doc(userId);
+
+            stateUnsub = userRef.onSnapshot(doc => {
                 if (doc.exists) {
                     const data = doc.data();
                     state = {
@@ -315,7 +315,6 @@
                         available_balance: data.available_balance ?? state.available_balance,
                         wallet_balance: data.wallet_balance ?? state.wallet_balance,
                         open_trades: data.open_trades || [],
-                        recent_closed_trades: data.recent_closed_trades || [],
                         total_trades: data.total_trades || 0,
                         total_fees_paid: data.total_fees_paid || 0,
                         total_funding_paid: data.total_funding_paid || 0,
@@ -326,7 +325,6 @@
                     if (data.updated_at) lastBotUpdateTime = new Date(data.updated_at);
                     updateUI();
                 } else {
-                    // Документ ещё не создан ботом — ждём
                     lastBotUpdateTime = null;
                     updateUI();
                 }
@@ -335,6 +333,19 @@
                 document.getElementById('statusDot').className = 'dot';
                 document.getElementById('statusText').textContent = 'Ошибка подключения';
             });
+
+            historyUnsub = userRef.collection('trades_history').onSnapshot(snapshot => {
+                const map = new Map();
+                snapshot.forEach(doc => {
+                    const trades = doc.data().trades || [];
+                    trades.forEach(t => {
+                        const key = t.id || (t.symbol + '_' + (t.close_time || t.open_time || Math.random()));
+                        map.set(key, t);
+                    });
+                });
+                allClosedTrades = Array.from(map.values());
+                updateUI();
+            }, err => console.error('History error:', err));
         }
 
         const modal = document.getElementById('apiModal');
@@ -373,8 +384,6 @@
             }
 
             const userId = makeUserId(key);
-
-            // Пишем ключи один раз. Бот подхватит в течение ~60 сек.
             await db.collection('bybit_config').doc(userId).set({
                 api_key: key,
                 api_secret: secret,
@@ -410,9 +419,6 @@
             document.getElementById('balance').textContent = fmtMoney(x.balance);
             document.getElementById('available').textContent = fmtMoney(x.available_balance);
 
-            const initialBal = isRealMode ? (parseFloat(x.wallet_balance) || 0) : INITIAL_VIRTUAL_BALANCE;
-            const pnl = (parseFloat(x.balance) || 0) - (isRealMode ? initialBal : INITIAL_VIRTUAL_BALANCE);
-            // Для виртуала показываем относительно 2000
             const base = isRealMode ? (parseFloat(x.wallet_balance) || INITIAL_VIRTUAL_BALANCE) : INITIAL_VIRTUAL_BALANCE;
             const displayPnl = (parseFloat(x.balance) || 0) - base;
             const pnlPct = base > 0 ? (displayPnl / base) * 100 : 0;
@@ -421,15 +427,15 @@
             const openTrades = x.open_trades || [];
             document.getElementById('openCount').textContent = openTrades.length;
             document.getElementById('openCountHeader').textContent = openTrades.length;
-            document.getElementById('totalTrades').textContent = x.total_trades || 0;
 
-            const closedTrades = x.recent_closed_trades || [];
+            const closedTrades = allClosedTrades;
+            const totalFromHistory = closedTrades.length;
+            document.getElementById('totalTrades').textContent = Math.max(x.total_trades || 0, totalFromHistory);
+
             const wins = closedTrades.filter(t => (parseFloat(t.pnl) || 0) > 0).length;
             const losses = closedTrades.filter(t => (parseFloat(t.pnl) || 0) < 0).length;
-            const liqs = closedTrades.filter(t => t.status === 'LIQUIDATED').length;
             document.getElementById('winCount').textContent = wins;
             document.getElementById('lossCount').textContent = losses;
-            document.getElementById('liqCount').textContent = liqs;
             document.getElementById('winRate').textContent = closedTrades.length > 0 ? ((wins / closedTrades.length) * 100).toFixed(1) + '%' : '0%';
 
             const otList = document.getElementById('openTradesList');
@@ -504,14 +510,12 @@
             }
 
             document.getElementById('lastUpdate').textContent = 'Обновлено: ' + new Date().toLocaleTimeString('ru-RU');
-
             document.getElementById('totalFees').textContent = fmtMoney(x.total_fees_paid);
             document.getElementById('totalFunding').textContent = fmtMoney(x.total_funding_paid);
             document.getElementById('totalFloating').textContent = fmtMoney(x.unrealized_pnl);
             document.getElementById('totalClosedPnl').textContent = fmtMoney(x.realized_pnl);
         }
 
-        // Старт в виртуальном режиме (общий демо)
         modal.style.display = 'flex';
         listenToState('demo');
     </script>
