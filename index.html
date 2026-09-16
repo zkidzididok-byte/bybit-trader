@@ -49,6 +49,7 @@
         .badge.OPEN { background: rgba(0,212,255,0.15); color: #00d4ff; }
         .badge.STOP_LOSS { background: rgba(255,152,0,0.15); color: #ff9800; }
         .badge.TRAILING_STOP { background: rgba(0,188,212,0.15); color: #00bcd4; }
+        .badge.CHECKPOINT { background: rgba(179,136,255,0.15); color: #b388ff; }
         .badge.CLOSED { background: rgba(0,230,118,0.15); color: #00e676; }
         .trade-details { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; }
         .detail-item { display: flex; flex-direction: column; gap: 2px; }
@@ -81,7 +82,6 @@
         .btn { flex: 1; padding: 12px 20px; border-radius: 10px; font-size: 0.95em; font-weight: 600; cursor: pointer; border: none; transition: all 0.2s; }
         .btn-primary { background: linear-gradient(135deg, #00d4ff, #7b2cbf); color: #fff; }
         .btn-secondary { background: #1a1f3a; color: #8892b0; border: 1px solid #2a2f5a; }
-        .btn-danger { background: #ff5252; color: #fff; }
         .mode-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 20px; font-size: 0.75em; font-weight: 600; }
         .mode-badge.virtual { background: rgba(0,212,255,0.15); color: #00d4ff; }
         .mode-badge.real { background: rgba(0,230,118,0.15); color: #00e676; }
@@ -89,12 +89,11 @@
     </style>
 </head>
 <body>
-    <!-- Модалка для ввода ключей -->
     <div class="modal-overlay" id="apiModal">
         <div class="modal-box">
             <button class="modal-close" id="modalClose" title="Виртуальный режим">&times;</button>
             <h2>🔑 API Bybit</h2>
-            <div class="modal-sub">Введите ключи для реальной торговли. Или закройте окно для виртуального режима ($2000).</div>
+            <div class="modal-sub">Введите ключи для реальной торговли. Или закройте окно для виртуального режима ($2000). Повторный ввод тех же ключей автоматически откроет ваш аккаунт.</div>
             
             <div class="form-group">
                 <label class="form-label">API Key</label>
@@ -172,7 +171,7 @@
 
             <div class="section">
                 <div class="section-header">
-                    <div class="section-title">История сделок</div>
+                    <div class="section-title">История сделок (последние 50)</div>
                     <div class="section-count" id="historyCount">0</div>
                 </div>
                 <div style="overflow-x:auto">
@@ -201,22 +200,22 @@
                     <div style="background:linear-gradient(135deg,#0d1128,#1a1f3a);border-radius:14px;padding:20px;border:1px solid #2a2f5a;">
                         <div style="font-size:0.8em;color:#8892b0;text-transform:uppercase;">🔴 Комиссии (всего)</div>
                         <div style="font-size:1.8em;font-weight:700;color:#ff5252;" id="totalFees">$0</div>
-                        <div style="font-size:0.8em;color:#8892b0;margin-top:6px;">Вход + выход + открытие + закрытие</div>
+                        <div style="font-size:0.8em;color:#8892b0;margin-top:6px;">Вход + выход</div>
                     </div>
                     <div style="background:linear-gradient(135deg,#0d1128,#1a1f3a);border-radius:14px;padding:20px;border:1px solid #2a2f5a;">
                         <div style="font-size:0.8em;color:#8892b0;text-transform:uppercase;">🔵 Фандинг (всего)</div>
                         <div style="font-size:1.8em;font-weight:700;color:#00bcd4;" id="totalFunding">$0</div>
-                        <div style="font-size:0.8em;color:#8892b0;margin-top:6px;">Накопленный фандинг по всем сделкам</div>
+                        <div style="font-size:0.8em;color:#8892b0;margin-top:6px;">Накопленный фандинг</div>
                     </div>
                     <div style="background:linear-gradient(135deg,#0d1128,#1a1f3a);border-radius:14px;padding:20px;border:1px solid #2a2f5a;">
                         <div style="font-size:0.8em;color:#8892b0;text-transform:uppercase;">🟣 Плавающая прибыль</div>
                         <div style="font-size:1.8em;font-weight:700;color:#b388ff;" id="totalFloating">$0</div>
-                        <div style="font-size:0.8em;color:#8892b0;margin-top:6px;">Нереализованный P&L открытых позиций</div>
+                        <div style="font-size:0.8em;color:#8892b0;margin-top:6px;">Нереализованный P&L</div>
                     </div>
                     <div style="background:linear-gradient(135deg,#0d1128,#1a1f3a);border-radius:14px;padding:20px;border:1px solid #2a2f5a;">
                         <div style="font-size:0.8em;color:#8892b0;text-transform:uppercase;">🟢 Реализованная прибыль</div>
                         <div style="font-size:1.8em;font-weight:700;color:#00e676;" id="totalClosedPnl">$0</div>
-                        <div style="font-size:0.8em;color:#8892b0;margin-top:6px;">P&L закрытых сделок (без комиссий и фандинга)</div>
+                        <div style="font-size:0.8em;color:#8892b0;margin-top:6px;">P&L закрытых сделок</div>
                     </div>
                 </div>
             </div>
@@ -224,6 +223,9 @@
     </div>
 
     <script>
+        const BOT_ID = 'bot1';
+        const INITIAL_VIRTUAL_BALANCE = 2000;
+
         const firebaseConfig = {
             apiKey: "AIzaSyDn3khNbagwGPKSkup5nv12H9n6q8mvv9g",
             authDomain: "market-sim-350b1.firebaseapp.com",
@@ -237,23 +239,22 @@
         const db = firebase.firestore();
 
         let isRealMode = false;
-        let apiCredentials = null;
+        let currentUserId = 'demo';
+        let stateUnsub = null;
         let lastBotUpdateTime = null;
-        let closedTradesData = [];
-
-        const INITIAL_VIRTUAL_BALANCE = 2000;
 
         let state = {
-            balance: 2000,
-            available_balance: 2000,
-            initial_balance: 2000,
+            balance: INITIAL_VIRTUAL_BALANCE,
+            available_balance: INITIAL_VIRTUAL_BALANCE,
+            wallet_balance: INITIAL_VIRTUAL_BALANCE,
             open_trades: [],
-            closed_trades: [],
+            recent_closed_trades: [],
             total_trades: 0,
             total_fees_paid: 0,
             total_funding_paid: 0,
             realized_pnl: 0,
-            unrealized_pnl: 0
+            unrealized_pnl: 0,
+            mode: 'demo'
         };
 
         const fmtMoney = v => '$' + (parseFloat(v) || 0).toFixed(4);
@@ -264,7 +265,6 @@
             return d.toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' });
         };
 
-        // ===== BYBIT API =====
         function generateSignature(apiSecret, timestamp, recvWindow, queryString) {
             return CryptoJS.HmacSHA256(timestamp + apiSecret + recvWindow + queryString, apiSecret).toString();
         }
@@ -295,32 +295,48 @@
             }
         }
 
-        async function fetchBybitPositions(creds) {
-            try {
-                const timestamp = Date.now().toString();
-                const recvWindow = '5000';
-                const query = 'category=linear&limit=200';
-                const sign = generateSignature(creds.apiSecret, timestamp, recvWindow, query);
-                const resp = await fetch(`https://api.bybit.com/v5/position/list?${query}`, {
-                    headers: {
-                        'X-BAPI-API-KEY': creds.apiKey,
-                        'X-BAPI-TIMESTAMP': timestamp,
-                        'X-BAPI-SIGN': sign,
-                        'X-BAPI-RECV-WINDOW': recvWindow
-                    }
-                });
-                const data = await resp.json();
-                if (data.retCode === 0 && data.result && data.result.list) {
-                    return data.result.list.filter(p => parseFloat(p.size) !== 0);
-                }
-                return [];
-            } catch (e) {
-                console.error('Bybit positions error:', e);
-                return [];
-            }
+        function makeUserId(apiKey) {
+            return CryptoJS.SHA256(apiKey).toString().substring(0, 24);
         }
 
-        // ===== MODAL =====
+        function listenToState(userId) {
+            if (stateUnsub) {
+                stateUnsub();
+                stateUnsub = null;
+            }
+            currentUserId = userId;
+            const ref = db.collection('trading_state').doc(BOT_ID).collection('users').doc(userId);
+            stateUnsub = ref.onSnapshot(doc => {
+                if (doc.exists) {
+                    const data = doc.data();
+                    state = {
+                        ...state,
+                        balance: data.balance ?? data.wallet_balance ?? state.balance,
+                        available_balance: data.available_balance ?? state.available_balance,
+                        wallet_balance: data.wallet_balance ?? state.wallet_balance,
+                        open_trades: data.open_trades || [],
+                        recent_closed_trades: data.recent_closed_trades || [],
+                        total_trades: data.total_trades || 0,
+                        total_fees_paid: data.total_fees_paid || 0,
+                        total_funding_paid: data.total_funding_paid || 0,
+                        realized_pnl: data.realized_pnl || 0,
+                        unrealized_pnl: data.unrealized_pnl || 0,
+                        mode: data.mode || 'demo'
+                    };
+                    if (data.updated_at) lastBotUpdateTime = new Date(data.updated_at);
+                    updateUI();
+                } else {
+                    // Документ ещё не создан ботом — ждём
+                    lastBotUpdateTime = null;
+                    updateUI();
+                }
+            }, err => {
+                console.error('Firestore state error:', err);
+                document.getElementById('statusDot').className = 'dot';
+                document.getElementById('statusText').textContent = 'Ошибка подключения';
+            });
+        }
+
         const modal = document.getElementById('apiModal');
         const modalClose = document.getElementById('modalClose');
         const btnVirtual = document.getElementById('btnVirtual');
@@ -333,13 +349,10 @@
 
         function setVirtualMode() {
             isRealMode = false;
-            apiCredentials = null;
             modal.style.display = 'none';
             modeBadge.className = 'mode-badge virtual';
             modeBadge.textContent = '🎮 Виртуальный';
-            state.balance = INITIAL_VIRTUAL_BALANCE;
-            state.available_balance = INITIAL_VIRTUAL_BALANCE;
-            state.initial_balance = INITIAL_VIRTUAL_BALANCE;
+            listenToState('demo');
             updateUI();
         }
 
@@ -352,32 +365,30 @@
                 return;
             }
 
-            apiCredentials = { apiKey: key, apiSecret: secret, accountType: accType };
-            const bal = await fetchBybitBalance(apiCredentials);
+            const creds = { apiKey: key, apiSecret: secret, accountType: accType };
+            const bal = await fetchBybitBalance(creds);
             if (!bal) {
                 alert('Не удалось подключиться к Bybit. Проверьте ключи.');
                 return;
             }
 
-            // Сохраняем ключи в Firebase (бот прочитает и начнёт торговать)
-            const userId = 'user_' + Date.now().toString(36);
-            db.collection('bybit_config').doc(userId).set({
+            const userId = makeUserId(key);
+
+            // Пишем ключи один раз. Бот подхватит в течение ~60 сек.
+            await db.collection('bybit_config').doc(userId).set({
                 api_key: key,
                 api_secret: secret,
                 accountType: accType,
                 enabled: true,
-                userId: userId
-            });
+                userId: userId,
+                created_at: new Date().toISOString()
+            }, { merge: true });
 
             isRealMode = true;
-            bybitBalance = bal;
             modal.style.display = 'none';
             modeBadge.className = 'mode-badge real';
             modeBadge.textContent = '🔴 Реальный';
-            state.balance = bal.wallet;
-            state.available_balance = bal.available;
-            state.initial_balance = bal.wallet;
-            await refreshRealData();
+            listenToState(userId);
             updateUI();
         }
 
@@ -387,73 +398,6 @@
         btnShowModal.addEventListener('click', () => { modal.style.display = 'flex'; });
         document.addEventListener('keydown', e => { if (e.key === 'Escape' && modal.style.display !== 'none') setVirtualMode(); });
 
-        // ===== REAL DATA =====
-        async function refreshRealData() {
-            if (!isRealMode || !apiCredentials) return;
-            const bal = await fetchBybitBalance(apiCredentials);
-            if (bal) { state.balance = bal.wallet; state.available_balance = bal.available; }
-            const positions = await fetchBybitPositions(apiCredentials);
-            state.open_trades = positions.map(p => {
-                const side = p.side === 'Buy' ? 'LONG' : 'SHORT';
-                const entryPrice = parseFloat(p.avgPrice) || parseFloat(p.entryPrice) || 0;
-                const markPrice = parseFloat(p.markPrice) || entryPrice;
-                const size = parseFloat(p.size) || 0;
-                const leverage = parseFloat(p.leverage) || 10;
-                const notional = size * entryPrice;
-                const margin = notional / leverage;
-                let pnl = 0;
-                if (side === 'LONG') pnl = (markPrice - entryPrice) * size;
-                else pnl = (entryPrice - markPrice) * size;
-                return {
-                    id: p.symbol + '_' + Date.now(),
-                    symbol: p.symbol,
-                    direction: side,
-                    entry_price: entryPrice,
-                    current_price: markPrice,
-                    quantity: size,
-                    leverage: leverage,
-                    margin: margin,
-                    notional: notional,
-                    pnl: pnl,
-                    pnl_percent: entryPrice > 0 ? (pnl / margin) * 100 : 0,
-                    stop_loss: parseFloat(p.stopLoss) || 0,
-                    trailing_stop: parseFloat(p.trailingStop) || 0,
-                    open_time: new Date().toISOString(),
-                    status: 'OPEN'
-                };
-            });
-            state.unrealized_pnl = state.open_trades.reduce((sum, t) => sum + (parseFloat(t.pnl) || 0), 0);
-        }
-
-        setInterval(async () => { if (isRealMode) { await refreshRealData(); updateUI(); } }, 5000);
-
-        // ===== FIREBASE LISTENERS =====
-        // Основное состояние бота
-        db.collection('trading_state').doc('bot1').onSnapshot(doc => {
-            if (doc.exists && !isRealMode) {
-                const data = doc.data();
-                state = { ...state, ...data };
-                if (data.updated_at) lastBotUpdateTime = new Date(data.updated_at);
-                updateUI();
-            }
-        }, err => {
-            console.error('Firestore error:', err);
-            if (!isRealMode) {
-                document.getElementById('statusDot').className = 'dot';
-                document.getElementById('statusText').textContent = 'Ошибка подключения';
-            }
-        });
-
-        // Закрытые сделки
-        db.collection('trading_state').doc('bot1').collection('closed_trades').onSnapshot(snapshot => {
-            closedTradesData = [];
-            snapshot.forEach(doc => { closedTradesData.push(doc.data()); });
-            state.closed_trades = closedTradesData;
-            state.total_trades = closedTradesData.length;
-            updateUI();
-        }, err => { console.error('Closed trades error:', err); });
-
-        // ===== UI =====
         function switchTab(tab) {
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
@@ -466,17 +410,20 @@
             document.getElementById('balance').textContent = fmtMoney(x.balance);
             document.getElementById('available').textContent = fmtMoney(x.available_balance);
 
-            const initialBal = parseFloat(x.initial_balance) || INITIAL_VIRTUAL_BALANCE;
-            const pnl = (parseFloat(x.balance) || 0) - initialBal;
-            const pnlPct = initialBal > 0 ? (pnl / initialBal) * 100 : 0;
-            document.getElementById('pnlChange').innerHTML = `<span class="${pnl >= 0 ? 'green' : 'red'}">${pnl >= 0 ? '+' : ''}${fmtMoney(pnl)} (${pnl >= 0 ? '+' : ''}${pnlPct.toFixed(2)}%)</span>`;
+            const initialBal = isRealMode ? (parseFloat(x.wallet_balance) || 0) : INITIAL_VIRTUAL_BALANCE;
+            const pnl = (parseFloat(x.balance) || 0) - (isRealMode ? initialBal : INITIAL_VIRTUAL_BALANCE);
+            // Для виртуала показываем относительно 2000
+            const base = isRealMode ? (parseFloat(x.wallet_balance) || INITIAL_VIRTUAL_BALANCE) : INITIAL_VIRTUAL_BALANCE;
+            const displayPnl = (parseFloat(x.balance) || 0) - base;
+            const pnlPct = base > 0 ? (displayPnl / base) * 100 : 0;
+            document.getElementById('pnlChange').innerHTML = `<span class="${displayPnl >= 0 ? 'green' : 'red'}">${displayPnl >= 0 ? '+' : ''}${fmtMoney(displayPnl)} (${displayPnl >= 0 ? '+' : ''}${pnlPct.toFixed(2)}%)</span>`;
 
             const openTrades = x.open_trades || [];
             document.getElementById('openCount').textContent = openTrades.length;
             document.getElementById('openCountHeader').textContent = openTrades.length;
-            document.getElementById('totalTrades').textContent = x.total_trades || closedTradesData.length;
+            document.getElementById('totalTrades').textContent = x.total_trades || 0;
 
-            const closedTrades = closedTradesData || x.closed_trades || [];
+            const closedTrades = x.recent_closed_trades || [];
             const wins = closedTrades.filter(t => (parseFloat(t.pnl) || 0) > 0).length;
             const losses = closedTrades.filter(t => (parseFloat(t.pnl) || 0) < 0).length;
             const liqs = closedTrades.filter(t => t.status === 'LIQUIDATED').length;
@@ -485,7 +432,6 @@
             document.getElementById('liqCount').textContent = liqs;
             document.getElementById('winRate').textContent = closedTrades.length > 0 ? ((wins / closedTrades.length) * 100).toFixed(1) + '%' : '0%';
 
-            // Открытые позиции
             const otList = document.getElementById('openTradesList');
             if (openTrades.length === 0) {
                 otList.innerHTML = '<div class="empty-state"><div class="icon">📭</div>Нет открытых позиций</div>';
@@ -501,7 +447,7 @@
                         </div>
                         <div class="trade-time">Зашёл: ${fmtTime(t.open_time)}</div>
                         <div class="trade-details">
-                            <div class="detail-item"><span class="detail-label">Плечо</span><span class="detail-value">x${t.leverage}</span></div>
+                            <div class="detail-item"><span class="detail-label">Плечо</span><span class="detail-value">x${t.leverage || 10}</span></div>
                             <div class="detail-item"><span class="detail-label">Маржа</span><span class="detail-value">${fmtMoney(t.margin)}</span></div>
                             <div class="detail-item"><span class="detail-label">Вход</span><span class="detail-value">${fmtMoney(t.entry_price)}</span></div>
                             <div class="detail-item"><span class="detail-label">Текущая</span><span class="detail-value">${fmtMoney(t.current_price)}</span></div>
@@ -514,7 +460,6 @@
                 `).join('');
             }
 
-            // История
             const histTable = document.getElementById('historyTable');
             document.getElementById('historyCount').textContent = closedTrades.length;
             if (closedTrades.length === 0) {
@@ -530,27 +475,25 @@
                         <td>${fmtTime(t.open_time)}</td>
                         <td>${fmtTime(t.close_time)}</td>
                         <td><b>${t.symbol}</b></td>
-                        <td>x${t.leverage}</td>
+                        <td>x${t.leverage || 10}</td>
                         <td><span class="badge ${t.direction}">${t.direction}</span></td>
                         <td>${fmtMoney(t.entry_price)}</td>
                         <td>${fmtMoney(t.exit_price)}</td>
                         <td>${fmtMoney(t.margin)}</td>
                         <td class="${(parseFloat(t.pnl) || 0) >= 0 ? 'green' : 'red'}">${(parseFloat(t.pnl) || 0) >= 0 ? '+' : ''}${fmtMoney(t.pnl)}</td>
                         <td class="${(parseFloat(t.pnl_percent) || 0) >= 0 ? 'green' : 'red'}">${fmtPct(t.pnl_percent)}</td>
-                        <td><span class="badge ${t.status}">${t.status}</span></td>
+                        <td><span class="badge ${t.status || 'CLOSED'}">${t.status || 'CLOSED'}</span></td>
                     </tr>
                 `).join('');
             }
 
-            // Статус
             const dot = document.getElementById('statusDot');
             const statusText = document.getElementById('statusText');
-            if (lastBotUpdateTime || isRealMode) {
-                const now = new Date();
-                const diffMs = now - lastBotUpdateTime;
-                if (isRealMode || diffMs < 5 * 60 * 1000) {
+            if (lastBotUpdateTime) {
+                const diffMs = Date.now() - lastBotUpdateTime.getTime();
+                if (diffMs < 3 * 60 * 1000) {
                     dot.className = 'dot online';
-                    statusText.textContent = isRealMode ? 'Bybit API' : 'Онлайн';
+                    statusText.textContent = isRealMode ? 'Онлайн (реал)' : 'Онлайн (демо)';
                 } else {
                     dot.className = 'dot offline';
                     statusText.textContent = 'Бот оффлайн';
@@ -562,16 +505,15 @@
 
             document.getElementById('lastUpdate').textContent = 'Обновлено: ' + new Date().toLocaleTimeString('ru-RU');
 
-            // Деньги
-            const allTrades = [...openTrades, ...closedTrades];
-            document.getElementById('totalFees').textContent = fmtMoney(allTrades.reduce((s, t) => s + (parseFloat(t.total_fees) || 0), 0));
-            document.getElementById('totalFunding').textContent = fmtMoney(allTrades.reduce((s, t) => s + (parseFloat(t.funding_paid) || parseFloat(t.total_funding) || 0), 0));
-            document.getElementById('totalFloating').textContent = fmtMoney(openTrades.reduce((s, t) => s + (parseFloat(t.pnl) || 0), 0));
-            document.getElementById('totalClosedPnl').textContent = fmtMoney(closedTrades.reduce((s, t) => s + (parseFloat(t.pnl) || 0), 0));
+            document.getElementById('totalFees').textContent = fmtMoney(x.total_fees_paid);
+            document.getElementById('totalFunding').textContent = fmtMoney(x.total_funding_paid);
+            document.getElementById('totalFloating').textContent = fmtMoney(x.unrealized_pnl);
+            document.getElementById('totalClosedPnl').textContent = fmtMoney(x.realized_pnl);
         }
 
-        // Показываем модалку при загрузке
+        // Старт в виртуальном режиме (общий демо)
         modal.style.display = 'flex';
+        listenToState('demo');
     </script>
 </body>
 </html>
